@@ -1,0 +1,312 @@
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Result } from './entities/result.entity';
+import { ResultItem } from './entities/result-item.entity';
+import { CreateResultDto } from './dto/create-result.dto';
+import { UpdateResultDto } from './dto/update-result.dto';
+import { ClubsService } from '../clubs/clubs.service';
+import { EventsService } from '../events/events.service';
+
+@Injectable()
+export class ResultsService {
+  constructor(
+    @InjectRepository(Result)
+    private resultsRepository: Repository<Result>,
+    @InjectRepository(ResultItem)
+    private resultItemsRepository: Repository<ResultItem>,
+    private clubsService: ClubsService,
+    private eventsService: EventsService,
+  ) {}
+
+  async create(createResultDto: CreateResultDto): Promise<Result> {
+    const { clubId, eventId } = createResultDto;
+    // Manejar tanto 'items' (del DTO) como 'scores' (del cliente)
+    const items = createResultDto.items || (createResultDto as any).scores;
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      throw new BadRequestException(
+        'Items/scores array is required and must not be empty',
+      );
+    }
+
+    // Find the referenced club and event
+    const club = await this.clubsService.findOne(clubId);
+    const event = await this.eventsService.findOne(eventId);
+
+    // Check if result already exists for this club and event
+    const existingResult = await this.resultsRepository.findOne({
+      where: {
+        club: { id: clubId },
+        event: { id: eventId },
+      },
+    });
+
+    if (existingResult) {
+      throw new BadRequestException(
+        'A result already exists for this club and event',
+      );
+    }
+
+    // Create the result
+    const result = this.resultsRepository.create({
+      club,
+      event,
+    });
+
+    // Save the result first to get an ID
+    await this.resultsRepository.save(result);
+
+    // Map event items and calculate total score
+    let totalScore = 0;
+    const resultItems = [];
+
+    for (const item of items) {
+      // Find the event item
+      console.log(
+        `[DEBUG] Buscando item con ID ${item.eventItemId} en evento ${event.id} (${event.name})`,
+      );
+      console.log(
+        `[DEBUG] Items disponibles en el evento:`,
+        event.items.map((i) => ({ id: i.id, name: i.name })),
+      );
+
+      const eventItem = event.items.find((ei) => ei.id === item.eventItemId);
+      if (!eventItem) {
+        // Intento alternativo: si los IDs son string vs number
+        const eventItemAlt = event.items.find(
+          (ei) => String(ei.id) === String(item.eventItemId),
+        );
+        if (eventItemAlt) {
+          console.log(
+            `[DEBUG] Item encontrado usando comparación de strings: ${eventItemAlt.id} vs ${item.eventItemId}`,
+          );
+          // Crear result item con el item alternativo encontrado
+          const resultItem = this.resultItemsRepository.create({
+            score: item.score,
+            eventItem: eventItemAlt,
+            result,
+          });
+
+          resultItems.push(resultItem);
+          // Calculate weighted score
+          totalScore += (item.score * eventItemAlt.percentage) / 100;
+          continue; // Continuar con el siguiente item
+        }
+
+        throw new NotFoundException(
+          `Event item with ID ${item.eventItemId} not found in event ${event.id} (${event.name})`,
+        );
+      }
+
+      // Create result item
+      const resultItem = this.resultItemsRepository.create({
+        score: item.score,
+        eventItem,
+        result,
+      });
+
+      resultItems.push(resultItem);
+
+      // Calculate weighted score
+      totalScore += (item.score * eventItem.percentage) / 100;
+    }
+
+    // Save result items
+    result.items = await this.resultItemsRepository.save(resultItems);
+
+    // Update total score
+    if (createResultDto.totalScore !== undefined) {
+      // Usar el totalScore proporcionado por el frontend
+      result.totalScore = parseFloat(createResultDto.totalScore.toFixed(2));
+    } else {
+      // Calcularlo si no se proporciona
+      result.totalScore = parseFloat(totalScore.toFixed(2));
+    }
+    await this.resultsRepository.save(result);
+
+    return result;
+  }
+
+  async findAll(): Promise<Result[]> {
+    return this.resultsRepository.find({
+      relations: ['club', 'event', 'items', 'items.eventItem'],
+    });
+  }
+
+  async findOne(id: number): Promise<Result> {
+    const result = await this.resultsRepository.findOne({
+      where: { id },
+      relations: ['club', 'event', 'items', 'items.eventItem'],
+    });
+
+    if (!result) {
+      throw new NotFoundException(`Result with ID ${id} not found`);
+    }
+
+    return result;
+  }
+
+  async findByClub(clubId: number): Promise<Result[]> {
+    return this.resultsRepository.find({
+      where: { club: { id: clubId } },
+      relations: ['club', 'event', 'items', 'items.eventItem'],
+    });
+  }
+
+  async findByEvent(eventId: number): Promise<Result[]> {
+    return this.resultsRepository.find({
+      where: { event: { id: eventId } },
+      relations: ['club', 'event', 'items', 'items.eventItem'],
+      order: { totalScore: 'DESC' },
+    });
+  }
+
+  async findByCamp(campId: number): Promise<Result[]> {
+    return this.resultsRepository.find({
+      where: { event: { camp: { id: campId } } },
+      relations: ['club', 'event', 'items', 'items.eventItem'],
+    });
+  }
+
+  async getClubRankingByCamp(campId: number): Promise<any[]> {
+    // Get all results for the camp
+    const results = await this.findByCamp(campId);
+
+    // Group results by club
+    const clubResults = {};
+
+    results.forEach((result) => {
+      const clubId = result.club.id;
+
+      if (!clubResults[clubId]) {
+        clubResults[clubId] = {
+          club: result.club,
+          totalScore: 0,
+          eventResults: [],
+        };
+      }
+
+      clubResults[clubId].totalScore += result.totalScore;
+      clubResults[clubId].eventResults.push({
+        event: result.event,
+        score: result.totalScore,
+      });
+    });
+
+    // Convert to array and sort by total score
+    return Object.values(clubResults)
+      .sort((a: any, b: any) => b.totalScore - a.totalScore)
+      .map((item: any, index: number) => ({
+        rank: index + 1,
+        ...item,
+        totalScore: parseFloat(item.totalScore.toFixed(2)),
+      }));
+  }
+
+  async update(id: number, updateResultDto: UpdateResultDto): Promise<Result> {
+    const result = await this.findOne(id);
+
+    // Handle items update if provided
+    const items = updateResultDto.items || (updateResultDto as any).scores;
+    if (items && Array.isArray(items) && items.length > 0) {
+      // Delete existing result items
+      await this.resultItemsRepository.delete({ result: { id } });
+
+      // Get the event for calculating scores
+      const event = await this.eventsService.findOne(result.event.id);
+
+      // Create new result items and calculate total score
+      let totalScore = 0;
+      const resultItems = [];
+
+      for (const item of items) {
+        // Find the event item
+        console.log(
+          `[DEBUG] Buscando item con ID ${item.eventItemId} en evento ${event.id} (${event.name})`,
+        );
+        console.log(
+          `[DEBUG] Items disponibles en el evento:`,
+          event.items.map((i) => ({ id: i.id, name: i.name })),
+        );
+        
+        const eventItem = event.items.find((ei) => ei.id === item.eventItemId);
+        if (!eventItem) {
+          // Intento alternativo: si los IDs son string vs number
+          const eventItemAlt = event.items.find(
+            (ei) => String(ei.id) === String(item.eventItemId),
+          );
+          if (eventItemAlt) {
+            console.log(
+              `[DEBUG] Item encontrado usando comparación de strings: ${eventItemAlt.id} vs ${item.eventItemId}`,
+            );
+            // Crear result item con el item alternativo encontrado
+            const resultItem = this.resultItemsRepository.create({
+              score: item.score,
+              eventItem: eventItemAlt,
+              result,
+            });
+
+            resultItems.push(resultItem);
+            // Calculate weighted score
+            totalScore += (item.score * eventItemAlt.percentage) / 100;
+            continue; // Continuar con el siguiente item
+          }
+
+          throw new NotFoundException(
+            `Event item with ID ${item.eventItemId} not found in event ${event.id} (${event.name})`,
+          );
+        }
+
+        // Create result item
+        const resultItem = this.resultItemsRepository.create({
+          score: item.score,
+          eventItem,
+          result,
+        });
+
+        resultItems.push(resultItem);
+
+        // Calculate weighted score
+        totalScore += (item.score * eventItem.percentage) / 100;
+      }
+
+      // Save result items
+      result.items = await this.resultItemsRepository.save(resultItems);
+
+      // Update total score
+      if (updateResultDto.totalScore !== undefined) {
+        // Usar el totalScore proporcionado por el frontend
+        result.totalScore = parseFloat(updateResultDto.totalScore.toFixed(2));
+      } else {
+        // Calcularlo si no se proporciona
+        result.totalScore = parseFloat(totalScore.toFixed(2));
+      }
+    }
+
+    // Handle club update if clubId is provided
+    if (updateResultDto.clubId) {
+      const club = await this.clubsService.findOne(updateResultDto.clubId);
+      result.club = club;
+    }
+
+    // Handle event update if eventId is provided
+    if (updateResultDto.eventId) {
+      const event = await this.eventsService.findOne(updateResultDto.eventId);
+      result.event = event;
+    }
+
+    return this.resultsRepository.save(result);
+  }
+
+  async remove(id: number): Promise<void> {
+    const result = await this.resultsRepository.delete(id);
+    if (result.affected === 0) {
+      throw new NotFoundException(`Result with ID ${id} not found`);
+    }
+  }
+}
