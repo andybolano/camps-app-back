@@ -52,7 +52,7 @@ export class EventsService {
     // Find the referenced camp
     const camp = await this.campsService.findOne(campId);
 
-    // Create the event
+    // Create the event with current date
     const event = this.eventsRepository.create({
       ...eventData,
       camp,
