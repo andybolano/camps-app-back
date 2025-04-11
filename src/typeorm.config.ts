@@ -7,8 +7,8 @@ config();
 const isProduction = process.env.NODE_ENV === 'production';
 
 const baseConfig = {
-  entities: ['src/**/*.entity{.ts,.js}'],
-  migrations: ['src/migrations/*{.ts,.js}'],
+  entities: [join(__dirname, '**/*.entity{.ts,.js}')],
+  migrations: [join(__dirname, 'migrations/*{.ts,.js}')],
   synchronize: false,
   migrationsRun: true,
   logging: true,
