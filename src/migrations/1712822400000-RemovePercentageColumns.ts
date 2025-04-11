@@ -64,7 +64,7 @@ export class RemovePercentageColumns1712822400000
     // Crear tablas temporales con las columnas de porcentaje
     await queryRunner.query(`
       CREATE TABLE "event_item_temp" (
-        "id" integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        "id" SERIAL PRIMARY KEY,
         "name" varchar NOT NULL,
         "percentage" float NOT NULL,
         "eventId" integer,
@@ -74,12 +74,12 @@ export class RemovePercentageColumns1712822400000
 
     await queryRunner.query(`
       CREATE TABLE "member_based_event_item_temp" (
-        "id" integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        "id" SERIAL PRIMARY KEY,
         "name" varchar NOT NULL,
         "percentage" float NOT NULL,
         "applicableCharacteristics" text NOT NULL,
         "calculationType" varchar NOT NULL DEFAULT 'PROPORTION',
-        "isRequired" boolean NOT NULL DEFAULT (0),
+        "isRequired" boolean NOT NULL DEFAULT false,
         "eventId" integer,
         CONSTRAINT "FK_7b0c3d2c8b3d3d3d3d3d3d3d3d3d" FOREIGN KEY ("eventId") REFERENCES "event" ("id") ON DELETE CASCADE ON UPDATE NO ACTION
       )
