@@ -1,6 +1,5 @@
-import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { typeOrmConfig } from './typeorm.config';
+import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { join } from 'path';
 import { User } from '../../users/entities/user.entity';
 import { Camp } from '../../camps/entities/camp.entity';
 import { Club } from '../../clubs/entities/club.entity';
@@ -12,22 +11,25 @@ import { Result } from '../../results/entities/result.entity';
 import { ResultItem } from '../../results/entities/result-item.entity';
 import { ResultMemberBasedItem } from '../../results/entities/result-member-based-item.entity';
 
-@Module({
-  imports: [
-    TypeOrmModule.forRoot(typeOrmConfig),
-    TypeOrmModule.forFeature([
-      User,
-      Camp,
-      Club,
-      Event,
-      EventItem,
-      MemberBasedEventItem,
-      MemberCharacteristic,
-      Result,
-      ResultItem,
-      ResultMemberBasedItem,
-    ]),
+export const typeOrmConfig: TypeOrmModuleOptions = {
+  type: 'postgres',
+  url: process.env.DATABASE_URL,
+  entities: [
+    User,
+    Camp,
+    Club,
+    Event,
+    EventItem,
+    MemberBasedEventItem,
+    MemberCharacteristic,
+    Result,
+    ResultItem,
+    ResultMemberBasedItem,
   ],
-  exports: [TypeOrmModule],
-})
-export class DatabaseModule {}
+  migrations: [join(__dirname, '../../migrations/*{.ts,.js}')],
+  synchronize: false,
+  migrationsRun: false,
+  logging: true,
+  ssl:
+    process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false,
+};
