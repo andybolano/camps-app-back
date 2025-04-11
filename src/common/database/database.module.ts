@@ -10,9 +10,12 @@ import { TypeOrmModuleOptions } from '@nestjs/typeorm';
       ...(process.env.NODE_ENV === 'production'
         ? {
             url: process.env.DATABASE_URL,
-            ssl: {
-              rejectUnauthorized: false,
-            },
+            ssl:
+              process.env.DATABASE_SSL === 'true'
+                ? {
+                    rejectUnauthorized: false,
+                  }
+                : false,
           }
         : {
             database:
