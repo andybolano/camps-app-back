@@ -9,7 +9,9 @@ const isProduction = process.env.NODE_ENV === 'production';
 const baseConfig = {
   entities: ['src/**/*.entity{.ts,.js}'],
   migrations: ['src/migrations/*{.ts,.js}'],
-  synchronize: !isProduction,
+  synchronize: false,
+  migrationsRun: true,
+  logging: true,
 };
 
 const configOptions = isProduction
