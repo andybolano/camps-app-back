@@ -9,7 +9,7 @@ export class RemovePercentageColumns1712822400000
     // Crear tablas temporales sin las columnas de porcentaje
     await queryRunner.query(`
       CREATE TABLE "event_item_temp" (
-        "id" integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        "id" SERIAL PRIMARY KEY,
         "name" varchar NOT NULL,
         "eventId" integer,
         CONSTRAINT "FK_6b0c3d2c8b3d3d3d3d3d3d3d3d3d" FOREIGN KEY ("eventId") REFERENCES "event" ("id") ON DELETE CASCADE ON UPDATE NO ACTION
@@ -18,13 +18,13 @@ export class RemovePercentageColumns1712822400000
 
     await queryRunner.query(`
       CREATE TABLE "member_based_event_item_temp" (
-        "id" integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+        "id" SERIAL PRIMARY KEY,
         "name" varchar NOT NULL,
         "applicableCharacteristics" text NOT NULL,
         "calculationType" varchar NOT NULL DEFAULT 'PROPORTION',
-        "isRequired" boolean NOT NULL DEFAULT (0),
+        "isRequired" boolean NOT NULL DEFAULT false,
         "eventId" integer,
-        CONSTRAINT "FK_7b0c3d2c8b3d3d3d3d3d3d3d3d3d" FOREIGN KEY ("eventId") REFERENCES "event" ("id") ON DELETE CASCADE ON UPDATE NO ACTION
+        CONSTRAINT "FK_7b0c3d2c8b3d3d3d3d3d3d3d3d" FOREIGN KEY ("eventId") REFERENCES "event" ("id") ON DELETE CASCADE ON UPDATE NO ACTION
       )
     `);
 
