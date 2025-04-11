@@ -24,6 +24,10 @@ export class UpdateEventDto {
   @IsNumber()
   campId?: number;
 
+  @IsOptional()
+  @IsNumber()
+  maxScore?: number;
+
   @IsEnum(EventType)
   @IsOptional()
   type?: EventType;

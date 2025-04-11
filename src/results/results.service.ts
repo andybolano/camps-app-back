@@ -164,10 +164,10 @@ export class ResultsService {
     // Update total score
     if (createResultDto.totalScore !== undefined) {
       // Usar el totalScore proporcionado por el frontend
-      result.totalScore = parseFloat(createResultDto.totalScore.toFixed(2));
+      result.totalScore = Math.round(createResultDto.totalScore * 100) / 100;
     } else {
       // Calcularlo si no se proporciona
-      result.totalScore = parseFloat(totalScore.toFixed(2));
+      result.totalScore = Math.round(totalScore * 100) / 100;
     }
     await this.resultsRepository.save(result);
 
@@ -409,10 +409,10 @@ export class ResultsService {
       // Update total score
       if (updateResultDto.totalScore !== undefined) {
         // Usar el totalScore proporcionado por el frontend
-        result.totalScore = parseFloat(updateResultDto.totalScore.toFixed(2));
+        result.totalScore = Math.round(updateResultDto.totalScore * 100) / 100;
       } else {
         // Calcularlo si no se proporciona
-        result.totalScore = parseFloat(totalScore.toFixed(2));
+        result.totalScore = Math.round(totalScore * 100) / 100;
       }
     }
 
@@ -491,7 +491,7 @@ export class ResultsService {
         }
 
         // Actualizar el total
-        result.totalScore = parseFloat(totalScore.toFixed(2));
+        result.totalScore = Math.round(totalScore * 100) / 100;
         await this.resultsRepository.save(result);
 
         console.log(

@@ -130,6 +130,12 @@ export class EventsService {
     if (updateEventDto.type !== undefined) {
       event.type = updateEventDto.type;
     }
+    if (updateEventDto.maxScore !== undefined) {
+      event.maxScore = updateEventDto.maxScore;
+    }
+
+    // Save the updated event properties
+    await this.eventsRepository.save(event);
 
     // Handle regular items update if provided
     if (updateEventDto.items) {

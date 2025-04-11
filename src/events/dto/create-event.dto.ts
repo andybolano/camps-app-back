@@ -30,6 +30,10 @@ export class CreateEventDto {
   @IsNumber()
   campId: number;
 
+  @IsNumber()
+  @IsNotEmpty()
+  maxScore: number;
+
   @IsEnum(EventType)
   @IsOptional()
   type?: EventType = EventType.REGULAR;

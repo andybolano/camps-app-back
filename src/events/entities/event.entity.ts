@@ -24,6 +24,9 @@ export class Event {
   @Column({ default: 'REGULAR' })
   type: string; // 'REGULAR' or 'MEMBER_BASED'
 
+  @Column({ type: 'integer' })
+  maxScore: number;
+
   @ManyToOne(() => Camp, (camp) => camp.events)
   camp: Camp;
 
