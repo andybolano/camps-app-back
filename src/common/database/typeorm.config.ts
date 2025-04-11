@@ -7,8 +7,8 @@ config();
 const isProduction = process.env.NODE_ENV === 'production';
 
 const baseConfig = {
-  entities: [join(__dirname, '**/*.entity{.ts,.js}')],
-  migrations: [join(__dirname, 'migrations/*{.ts,.js}')],
+  entities: [join(__dirname, '../../**/*.entity{.ts,.js}')],
+  migrations: [join(__dirname, '../../migrations/*{.ts,.js}')],
   synchronize: false,
   migrationsRun: true,
   logging: true,
@@ -27,7 +27,7 @@ const configOptions = isProduction
   : {
       ...baseConfig,
       type: 'sqlite',
-      database: join(__dirname, 'db.sqlite'),
+      database: join(__dirname, '../../db.sqlite'),
     };
 
 export default new DataSource(configOptions as any);
