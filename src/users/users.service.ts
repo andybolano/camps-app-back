@@ -3,6 +3,7 @@ import {
   ConflictException,
   NotFoundException,
   Logger,
+  OnModuleInit,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -11,23 +12,38 @@ import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 
 @Injectable()
-export class UsersService {
+export class UsersService implements OnModuleInit {
   private readonly logger = new Logger(UsersService.name);
 
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
-  ) {
-    // Inicializa el usuario admin por defecto cuando se inicia el servicio
-    this.initDefaultAdmin();
+  ) {}
+
+  async onModuleInit() {
+    try {
+      await this.initDefaultAdmin();
+    } catch (error) {
+      this.logger.error('Error during module initialization:', error);
+    }
   }
 
   private async initDefaultAdmin() {
     try {
-      // Verifica si ya existe el usuario admin
-      const adminExists = await this.findByUsername('admin');
+      // Verificar si la tabla existe
+      const tableExists = await this.usersRepository.query(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='user'",
+      );
 
-      if (!adminExists) {
+      if (!tableExists || tableExists.length === 0) {
+        this.logger.warn('User table does not exist yet');
+        return;
+      }
+
+      const count = await this.usersRepository.count();
+
+      // Solo crear el admin si no hay usuarios en la base de datos
+      if (count === 0) {
         this.logger.log('Creating default admin user...');
 
         // Hash the password directly
@@ -43,10 +59,11 @@ export class UsersService {
         await this.usersRepository.save(adminUser);
         this.logger.log('Default admin user created successfully');
       } else {
-        this.logger.log('Admin user already exists');
+        this.logger.log('Users already exist in the database');
       }
     } catch (error) {
       this.logger.error('Failed to create default admin user', error);
+      // No relanzamos el error para evitar que la aplicación falle al iniciar
     }
   }
 

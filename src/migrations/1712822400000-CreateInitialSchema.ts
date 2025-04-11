@@ -2,6 +2,18 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreateInitialSchema1712822400000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
+    // Drop existing tables in reverse order
+    await queryRunner.query(`DROP TABLE IF EXISTS "result_member_based_item"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "result_item"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "result"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "member_based_event_item"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "event_item"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "event"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "member_characteristic"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "club"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "camp"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "user"`);
+
     // Create user table first
     await queryRunner.query(`
       CREATE TABLE "user" (
@@ -40,7 +52,7 @@ export class CreateInitialSchema1712822400000 implements MigrationInterface {
         "isPaid" boolean NOT NULL DEFAULT true,
         "shieldUrl" varchar,
         "campId" integer,
-        CONSTRAINT "FK_club_camp" FOREIGN KEY ("campId") REFERENCES "camp" ("id") ON DELETE CASCADE ON UPDATE NO ACTION
+        CONSTRAINT "FK_club_camp" FOREIGN KEY ("campId") REFERENCES "camp" ("id") ON DELETE CASCADE
       )
     `);
 
@@ -52,7 +64,7 @@ export class CreateInitialSchema1712822400000 implements MigrationInterface {
         "value" integer NOT NULL,
         "matchCount" integer NOT NULL DEFAULT 0,
         "clubId" integer,
-        CONSTRAINT "FK_member_characteristic_club" FOREIGN KEY ("clubId") REFERENCES "club" ("id") ON DELETE CASCADE ON UPDATE NO ACTION
+        CONSTRAINT "FK_member_characteristic_club" FOREIGN KEY ("clubId") REFERENCES "club" ("id") ON DELETE CASCADE
       )
     `);
 
@@ -66,7 +78,7 @@ export class CreateInitialSchema1712822400000 implements MigrationInterface {
         "startDate" timestamp NOT NULL,
         "endDate" timestamp NOT NULL,
         "campId" integer,
-        CONSTRAINT "FK_event_camp" FOREIGN KEY ("campId") REFERENCES "camp" ("id") ON DELETE CASCADE ON UPDATE NO ACTION
+        CONSTRAINT "FK_event_camp" FOREIGN KEY ("campId") REFERENCES "camp" ("id") ON DELETE CASCADE
       )
     `);
 
@@ -76,7 +88,7 @@ export class CreateInitialSchema1712822400000 implements MigrationInterface {
         "id" SERIAL PRIMARY KEY,
         "name" varchar NOT NULL,
         "eventId" integer,
-        CONSTRAINT "FK_event_item_event" FOREIGN KEY ("eventId") REFERENCES "event" ("id") ON DELETE CASCADE ON UPDATE NO ACTION
+        CONSTRAINT "FK_event_item_event" FOREIGN KEY ("eventId") REFERENCES "event" ("id") ON DELETE CASCADE
       )
     `);
 
@@ -89,7 +101,7 @@ export class CreateInitialSchema1712822400000 implements MigrationInterface {
         "calculationType" varchar NOT NULL DEFAULT 'PROPORTION',
         "isRequired" boolean NOT NULL DEFAULT false,
         "eventId" integer,
-        CONSTRAINT "FK_member_based_event_item_event" FOREIGN KEY ("eventId") REFERENCES "event" ("id") ON DELETE CASCADE ON UPDATE NO ACTION
+        CONSTRAINT "FK_member_based_event_item_event" FOREIGN KEY ("eventId") REFERENCES "event" ("id") ON DELETE CASCADE
       )
     `);
 
@@ -100,8 +112,8 @@ export class CreateInitialSchema1712822400000 implements MigrationInterface {
         "totalScore" float NOT NULL DEFAULT 0,
         "clubId" integer,
         "eventId" integer,
-        CONSTRAINT "FK_result_club" FOREIGN KEY ("clubId") REFERENCES "club" ("id") ON DELETE CASCADE ON UPDATE NO ACTION,
-        CONSTRAINT "FK_result_event" FOREIGN KEY ("eventId") REFERENCES "event" ("id") ON DELETE CASCADE ON UPDATE NO ACTION
+        CONSTRAINT "FK_result_club" FOREIGN KEY ("clubId") REFERENCES "club" ("id") ON DELETE CASCADE,
+        CONSTRAINT "FK_result_event" FOREIGN KEY ("eventId") REFERENCES "event" ("id") ON DELETE CASCADE
       )
     `);
 
@@ -112,8 +124,8 @@ export class CreateInitialSchema1712822400000 implements MigrationInterface {
         "score" float NOT NULL,
         "resultId" integer,
         "eventItemId" integer,
-        CONSTRAINT "FK_result_item_result" FOREIGN KEY ("resultId") REFERENCES "result" ("id") ON DELETE CASCADE ON UPDATE NO ACTION,
-        CONSTRAINT "FK_result_item_event_item" FOREIGN KEY ("eventItemId") REFERENCES "event_item" ("id") ON DELETE CASCADE ON UPDATE NO ACTION
+        CONSTRAINT "FK_result_item_result" FOREIGN KEY ("resultId") REFERENCES "result" ("id") ON DELETE CASCADE,
+        CONSTRAINT "FK_result_item_event_item" FOREIGN KEY ("eventItemId") REFERENCES "event_item" ("id") ON DELETE CASCADE
       )
     `);
 
@@ -126,8 +138,8 @@ export class CreateInitialSchema1712822400000 implements MigrationInterface {
         "matchCount" integer NOT NULL DEFAULT 0,
         "resultId" integer,
         "eventItemId" integer,
-        CONSTRAINT "FK_result_member_based_item_result" FOREIGN KEY ("resultId") REFERENCES "result" ("id") ON DELETE CASCADE ON UPDATE NO ACTION,
-        CONSTRAINT "FK_result_member_based_item_event_item" FOREIGN KEY ("eventItemId") REFERENCES "member_based_event_item" ("id") ON DELETE CASCADE ON UPDATE NO ACTION
+        CONSTRAINT "FK_result_member_based_item_result" FOREIGN KEY ("resultId") REFERENCES "result" ("id") ON DELETE CASCADE,
+        CONSTRAINT "FK_result_member_based_item_event_item" FOREIGN KEY ("eventItemId") REFERENCES "member_based_event_item" ("id") ON DELETE CASCADE
       )
     `);
 
@@ -169,15 +181,15 @@ export class CreateInitialSchema1712822400000 implements MigrationInterface {
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     // Drop tables in reverse order
-    await queryRunner.query(`DROP TABLE "result_member_based_item"`);
-    await queryRunner.query(`DROP TABLE "result_item"`);
-    await queryRunner.query(`DROP TABLE "result"`);
-    await queryRunner.query(`DROP TABLE "member_based_event_item"`);
-    await queryRunner.query(`DROP TABLE "event_item"`);
-    await queryRunner.query(`DROP TABLE "event"`);
-    await queryRunner.query(`DROP TABLE "member_characteristic"`);
-    await queryRunner.query(`DROP TABLE "club"`);
-    await queryRunner.query(`DROP TABLE "camp"`);
-    await queryRunner.query(`DROP TABLE "user"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "result_member_based_item"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "result_item"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "result"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "member_based_event_item"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "event_item"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "event"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "member_characteristic"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "club"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "camp"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "user"`);
   }
 }

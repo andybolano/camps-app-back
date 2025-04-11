@@ -2,6 +2,15 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+
+// Load environment variables based on NODE_ENV
+const envFile =
+  process.env.NODE_ENV === 'production'
+    ? '.env.production'
+    : '.env.development';
+dotenv.config({ path: path.resolve(process.cwd(), envFile) });
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -11,11 +20,14 @@ async function bootstrap() {
   const isDev = process.env.NODE_ENV !== 'production';
   if (isDev) {
     app.enableCors({
-      origin: 'http://localhost:4200',
+      origin: process.env.CORS_ORIGIN || 'http://localhost:4200',
       credentials: true,
     });
   } else {
-    app.enableCors();
+    app.enableCors({
+      origin: process.env.CORS_ORIGIN,
+      credentials: true,
+    });
   }
 
   // Only serve static assets in production mode
