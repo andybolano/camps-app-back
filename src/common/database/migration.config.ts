@@ -33,7 +33,7 @@ export const AppDataSource = new DataSource({
   synchronize: false,
   migrationsRun: false,
   logging: !isProduction,
-  ssl: isProduction ? { rejectUnauthorized: false } : false,
+  ssl: false,
   extra: {
     max: isProduction ? 20 : 10,
     connectionTimeoutMillis: 5000,
