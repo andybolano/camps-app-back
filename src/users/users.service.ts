@@ -30,12 +30,12 @@ export class UsersService implements OnModuleInit {
 
   private async initDefaultAdmin() {
     try {
-      // Verificar si la tabla existe
+      // Verificar si la tabla existe usando PostgreSQL
       const tableExists = await this.usersRepository.query(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name='user'",
+        "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'user')",
       );
 
-      if (!tableExists || tableExists.length === 0) {
+      if (!tableExists[0]?.exists) {
         this.logger.warn('User table does not exist yet');
         return;
       }

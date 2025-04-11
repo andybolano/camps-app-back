@@ -3,14 +3,9 @@ import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import * as dotenv from 'dotenv';
-import * as path from 'path';
 
-// Load environment variables based on NODE_ENV
-const envFile =
-  process.env.NODE_ENV === 'production'
-    ? '.env.production'
-    : '.env.development';
-dotenv.config({ path: path.resolve(process.cwd(), envFile) });
+// Load environment variables
+dotenv.config();
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -20,12 +15,16 @@ async function bootstrap() {
   const isDev = process.env.NODE_ENV !== 'production';
   if (isDev) {
     app.enableCors({
-      origin: process.env.CORS_ORIGIN || 'http://localhost:4200',
+      origin: '*',
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
       credentials: true,
     });
   } else {
     app.enableCors({
-      origin: process.env.CORS_ORIGIN,
+      origin: '*',
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
       credentials: true,
     });
   }

@@ -1,4 +1,4 @@
-import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 import { join } from 'path';
 import { User } from '../../users/entities/user.entity';
 import { Camp } from '../../camps/entities/camp.entity';
@@ -13,7 +13,7 @@ import { ResultMemberBasedItem } from '../../results/entities/result-member-base
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-export const typeOrmConfig: TypeOrmModuleOptions = {
+export const AppDataSource = new DataSource({
   type: 'postgres',
   url: process.env.DATABASE_URL,
   database: process.env.DATABASE_NAME || 'campamento_app',
@@ -39,4 +39,4 @@ export const typeOrmConfig: TypeOrmModuleOptions = {
     connectionTimeoutMillis: 5000,
     idleTimeoutMillis: 30000,
   },
-};
+});
