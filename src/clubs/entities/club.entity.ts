@@ -35,6 +35,12 @@ export class Club {
   @Column({ default: 0 })
   companionsCount: number;
 
+  @Column({ default: 0 })
+  directorCount: number;
+
+  @Column({ default: 0 })
+  pastorCount: number;
+
   @Column({ type: 'float' })
   registrationFee: number;
 
