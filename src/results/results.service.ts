@@ -327,14 +327,19 @@ export class ResultsService {
       );
     }
 
+    // Get the event for calculating scores - use the requested or existing event ID
+    const event = await this.eventsService.findOne(requestedEventId);
+
     // Handle items update if provided
     const items = updateResultDto.items || (updateResultDto as any).scores;
+    const memberBasedItems =
+      updateResultDto.memberBasedItems ||
+      (updateResultDto as any).memberBasedScores;
+    let totalScore = 0;
+
     if (items && Array.isArray(items) && items.length > 0) {
       // Delete existing result items
       await this.resultItemsRepository.delete({ result: { id } });
-
-      // Get the event for calculating scores - use the requested or existing event ID
-      const event = await this.eventsService.findOne(requestedEventId);
 
       console.log(
         `[DEBUG] Evento para cálculo de puntuaciones: ID=${event.id}, Nombre=${event.name}`,
@@ -349,7 +354,6 @@ export class ResultsService {
       );
 
       // Create new result items and calculate total score
-      let totalScore = 0;
       const resultItems = [];
 
       for (const item of items) {
@@ -398,22 +402,71 @@ export class ResultsService {
         });
 
         resultItems.push(resultItem);
-
-        // Calculate score directly without percentage
         totalScore += item.score;
       }
 
       // Save result items
       result.items = await this.resultItemsRepository.save(resultItems);
+    }
 
-      // Update total score
-      if (updateResultDto.totalScore !== undefined) {
-        // Usar el totalScore proporcionado por el frontend
-        result.totalScore = Math.round(updateResultDto.totalScore * 100) / 100;
-      } else {
-        // Calcularlo si no se proporciona
-        result.totalScore = Math.round(totalScore * 100) / 100;
+    // Handle member-based items update if provided
+    if (
+      memberBasedItems &&
+      Array.isArray(memberBasedItems) &&
+      memberBasedItems.length > 0
+    ) {
+      // Delete existing member-based result items
+      await this.resultMemberBasedItemsRepository.delete({ result: { id } });
+
+      const resultMemberBasedItems = [];
+
+      for (const item of memberBasedItems) {
+        const eventItem =
+          event.memberBasedItems.find((ei) => ei.id === item.eventItemId) ||
+          event.memberBasedItems.find(
+            (ei) => String(ei.id) === String(item.eventItemId),
+          );
+
+        if (!eventItem) {
+          throw new NotFoundException(
+            `Member-based event item with ID ${item.eventItemId} not found in event ${event.id} (${event.name})`,
+          );
+        }
+
+        // Calculate score based on match count and total with characteristic
+        const proportion =
+          item.totalWithCharacteristic > 0
+            ? item.matchCount / item.totalWithCharacteristic
+            : 0;
+        const score = proportion * 10; // Scale to 0-10
+
+        const resultMemberBasedItem =
+          this.resultMemberBasedItemsRepository.create({
+            score,
+            matchCount: item.matchCount,
+            totalWithCharacteristic: item.totalWithCharacteristic,
+            eventItem,
+            result,
+          });
+
+        resultMemberBasedItems.push(resultMemberBasedItem);
+        totalScore += score;
       }
+
+      // Save result member-based items
+      result.memberBasedItems =
+        await this.resultMemberBasedItemsRepository.save(
+          resultMemberBasedItems,
+        );
+    }
+
+    // Update total score
+    if (updateResultDto.totalScore !== undefined) {
+      // Usar el totalScore proporcionado por el frontend
+      result.totalScore = Math.round(updateResultDto.totalScore * 100) / 100;
+    } else {
+      // Calcularlo si no se proporciona
+      result.totalScore = Math.round(totalScore * 100) / 100;
     }
 
     // Handle club update if clubId is provided
