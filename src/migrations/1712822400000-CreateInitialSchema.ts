@@ -1,8 +1,8 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CreateInitialTables1712822400002 implements MigrationInterface {
+export class CreateInitialSchema1712822400000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // Crear tabla de usuarios
+    // Create user table first
     await queryRunner.query(`
       CREATE TABLE "user" (
         "id" SERIAL PRIMARY KEY,
@@ -12,7 +12,7 @@ export class CreateInitialTables1712822400002 implements MigrationInterface {
       )
     `);
 
-    // Crear tabla de eventos
+    // Create event table
     await queryRunner.query(`
       CREATE TABLE "event" (
         "id" SERIAL PRIMARY KEY,
@@ -24,7 +24,7 @@ export class CreateInitialTables1712822400002 implements MigrationInterface {
       )
     `);
 
-    // Crear tabla de items de evento
+    // Create event_item table with foreign key to event
     await queryRunner.query(`
       CREATE TABLE "event_item" (
         "id" SERIAL PRIMARY KEY,
@@ -34,7 +34,7 @@ export class CreateInitialTables1712822400002 implements MigrationInterface {
       )
     `);
 
-    // Crear tabla de items de evento basados en miembros
+    // Create member_based_event_item table with foreign key to event
     await queryRunner.query(`
       CREATE TABLE "member_based_event_item" (
         "id" SERIAL PRIMARY KEY,
@@ -47,7 +47,7 @@ export class CreateInitialTables1712822400002 implements MigrationInterface {
       )
     `);
 
-    // Crear índices
+    // Create indexes
     await queryRunner.query(
       `CREATE INDEX "IDX_event_item_eventId" ON "event_item" ("eventId")`,
     );
@@ -57,6 +57,7 @@ export class CreateInitialTables1712822400002 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
+    // Drop tables in reverse order
     await queryRunner.query(`DROP TABLE "member_based_event_item"`);
     await queryRunner.query(`DROP TABLE "event_item"`);
     await queryRunner.query(`DROP TABLE "event"`);
