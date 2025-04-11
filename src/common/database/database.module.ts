@@ -1,15 +1,27 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { join } from 'path';
+import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 
 @Module({
   imports: [
     TypeOrmModule.forRoot({
-      type: 'sqlite',
-      database: process.env.DATABASE_PATH || join(process.cwd(), 'db.sqlite'),
+      type: 'postgres',
+      ...(process.env.NODE_ENV === 'production'
+        ? {
+            url: process.env.DATABASE_URL,
+            ssl: {
+              rejectUnauthorized: false,
+            },
+          }
+        : {
+            database:
+              process.env.DATABASE_PATH || join(process.cwd(), 'db.sqlite'),
+            type: 'sqlite',
+          }),
       entities: [join(__dirname, '../../**/*.entity{.ts,.js}')],
-      synchronize: true, // Set to false in production
-    }),
+      synchronize: process.env.NODE_ENV !== 'production', // Solo true en desarrollo
+    } as TypeOrmModuleOptions),
   ],
   exports: [TypeOrmModule],
 })

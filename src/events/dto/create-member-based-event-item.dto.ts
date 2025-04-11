@@ -1,9 +1,6 @@
 import {
   IsNotEmpty,
   IsString,
-  IsNumber,
-  Min,
-  Max,
   IsArray,
   IsBoolean,
   IsOptional,
@@ -13,11 +10,6 @@ export class CreateMemberBasedEventItemDto {
   @IsNotEmpty()
   @IsString()
   name: string;
-
-  @IsNumber()
-  @Min(0)
-  @Max(100)
-  percentage: number;
 
   @IsArray()
   @IsString({ each: true })

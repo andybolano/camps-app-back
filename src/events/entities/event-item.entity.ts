@@ -9,9 +9,6 @@ export class EventItem {
   @Column()
   name: string;
 
-  @Column({ type: 'float' })
-  percentage: number;
-
   @ManyToOne(() => Event, (event) => event.items)
   event: Event;
 }

@@ -9,9 +9,6 @@ export class MemberBasedEventItem {
   @Column()
   name: string;
 
-  @Column({ type: 'float' })
-  percentage: number;
-
   @Column('simple-array')
   applicableCharacteristics: string[];
 

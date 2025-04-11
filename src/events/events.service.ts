@@ -186,12 +186,8 @@ export class EventsService {
             const itemHasScores = await this.eventItemHasScores(item.id);
 
             if (itemHasScores) {
-              // Verificar si se está intentando cambiar el porcentaje o nombre
-              if (
-                (updateData.name && updateData.name !== item.name) ||
-                (updateData.percentage !== undefined &&
-                  updateData.percentage !== item.percentage)
-              ) {
+              // Verificar si se está intentando cambiar el nombre
+              if (updateData.name && updateData.name !== item.name) {
                 throw new BadRequestException(
                   `No se puede modificar el ítem "${item.name}" porque ya tiene calificaciones asociadas.`,
                 );
@@ -245,12 +241,11 @@ export class EventsService {
           if (updateData) {
             // Para evitar duplicados durante la actualización, solo copiamos propiedades específicas
             if (updateData.name) item.name = updateData.name;
-            if (updateData.percentage !== undefined)
-              item.percentage = updateData.percentage;
             // Añade aquí otras propiedades que puedan necesitar actualizarse
           }
         }
 
+        // Save updated items
         if (itemsToUpdate.length > 0) {
           await this.eventItemsRepository.save(itemsToUpdate);
         }
@@ -263,87 +258,55 @@ export class EventsService {
               event,
             }),
           );
-
-          const savedNewItems = await this.eventItemsRepository.save(newItems);
-
-          // Update the event's items array - ensure no duplicates by combining unique items
-          const allEventItems = [...itemsToUpdate, ...savedNewItems];
-
-          // We'll use a Map to deduplicate items by ID
-          const uniqueItemsMap = new Map();
-          for (const item of allEventItems) {
-            uniqueItemsMap.set(item.id, item);
-          }
-
-          // Convert the map values back to an array
-          event.items = Array.from(uniqueItemsMap.values());
-        } else {
-          event.items = [...itemsToUpdate];
+          await this.eventItemsRepository.save(newItems);
         }
       } catch (error) {
-        if (error instanceof BadRequestException) {
-          throw error; // Re-lanzar errores de validación
-        }
-        throw new Error(`Failed to update event items: ${error.message}`);
+        console.error('Error during items update:', error);
+        throw error;
       }
     }
 
     // Handle member-based items update if provided
     if (updateEventDto.memberBasedItems) {
-      // Get existing member-based event items
-      const existingMemberBasedItems =
-        await this.memberBasedEventItemsRepository.find({
-          where: { event: { id } },
-          relations: ['event'],
-        });
+      // Similar logic to regular items but for member-based items
+      const existingItems = await this.memberBasedEventItemsRepository.find({
+        where: { event: { id } },
+        relations: ['event'],
+      });
 
-      // Create a map of items from the DTO with their IDs (if they have one)
-      const updatedMemberBasedItemsMap = new Map();
+      const updatedItemsMap = new Map();
       updateEventDto.memberBasedItems.forEach((item) => {
         if (item.id) {
-          updatedMemberBasedItemsMap.set(item.id, item);
+          updatedItemsMap.set(item.id, item);
         }
       });
 
-      // Items to delete (existing items not in the update)
-      const memberBasedItemsToDelete = existingMemberBasedItems.filter(
-        (item) => !updatedMemberBasedItemsMap.has(item.id),
+      const itemsToDelete = existingItems.filter(
+        (item) => !updatedItemsMap.has(item.id),
       );
-
-      // Items to update (existing items also in the update)
-      const memberBasedItemsToUpdate = existingMemberBasedItems.filter((item) =>
-        updatedMemberBasedItemsMap.has(item.id),
+      const itemsToUpdate = existingItems.filter((item) =>
+        updatedItemsMap.has(item.id),
       );
-
-      // Items to create (items in update without IDs or with IDs not in existing items)
-      const memberBasedItemsToCreate = updateEventDto.memberBasedItems.filter(
+      const itemsToCreate = updateEventDto.memberBasedItems.filter(
         (item) =>
           !item.id ||
-          !existingMemberBasedItems.some((existing) => existing.id === item.id),
+          !existingItems.some((existing) => existing.id === item.id),
       );
 
       try {
-        // Check similar validation as with regular items
         if (hasScores) {
-          // Don't delete items if event has scores
-          if (memberBasedItemsToDelete.length > 0) {
+          if (itemsToDelete.length > 0) {
             throw new BadRequestException(
               'No se pueden actualizar los ítems de calificación porque este evento ya tiene calificaciones registradas.',
             );
           }
 
-          // Check if we're trying to modify items with scores
-          for (const item of memberBasedItemsToUpdate) {
-            const updateData = updatedMemberBasedItemsMap.get(item.id);
+          for (const item of itemsToUpdate) {
+            const updateData = updatedItemsMap.get(item.id);
             const itemHasScores = await this.eventItemHasScores(item.id);
 
             if (itemHasScores) {
-              // Check if name or percentage is changing
-              if (
-                (updateData.name && updateData.name !== item.name) ||
-                (updateData.percentage !== undefined &&
-                  updateData.percentage !== item.percentage)
-              ) {
+              if (updateData.name && updateData.name !== item.name) {
                 throw new BadRequestException(
                   `No se puede modificar el ítem "${item.name}" porque ya tiene calificaciones asociadas.`,
                 );
@@ -351,27 +314,17 @@ export class EventsService {
             }
           }
         } else {
-          // If no scores, proceed with deletions
-          if (memberBasedItemsToDelete.length > 0) {
-            const idsToDelete = memberBasedItemsToDelete.map((item) => item.id);
-            // Delete ResultItems if needed
-            for (const item of memberBasedItemsToDelete) {
-              await this.resultsService.deleteResultItemsByEventItem(item.id);
-            }
-
-            // Delete the items
+          if (itemsToDelete.length > 0) {
+            const idsToDelete = itemsToDelete.map((item) => item.id);
             await this.memberBasedEventItemsRepository.delete(idsToDelete);
           }
         }
 
         // Update existing items
-        for (const item of memberBasedItemsToUpdate) {
-          const updateData = updatedMemberBasedItemsMap.get(item.id);
+        for (const item of itemsToUpdate) {
+          const updateData = updatedItemsMap.get(item.id);
           if (updateData) {
-            // Copy specific properties to avoid duplication issues
             if (updateData.name) item.name = updateData.name;
-            if (updateData.percentage !== undefined)
-              item.percentage = updateData.percentage;
             if (updateData.applicableCharacteristics)
               item.applicableCharacteristics =
                 updateData.applicableCharacteristics;
@@ -382,68 +335,28 @@ export class EventsService {
           }
         }
 
-        if (memberBasedItemsToUpdate.length > 0) {
-          await this.memberBasedEventItemsRepository.save(
-            memberBasedItemsToUpdate,
-          );
+        // Save updated items
+        if (itemsToUpdate.length > 0) {
+          await this.memberBasedEventItemsRepository.save(itemsToUpdate);
         }
 
         // Create new items
-        if (memberBasedItemsToCreate.length > 0) {
-          try {
-            const newItems = memberBasedItemsToCreate.map((item) => {
-              return this.memberBasedEventItemsRepository.create({
-                name: item.name,
-                percentage: item.percentage,
-                applicableCharacteristics: item.applicableCharacteristics,
-                calculationType: item.calculationType || 'PROPORTION',
-                isRequired: item.isRequired || false,
-                event: event,
-              });
-            });
-
-            const savedNewItems =
-              await this.memberBasedEventItemsRepository.save(newItems);
-
-            // Update the event's memberBasedItems array - ensure no duplicates by combining unique items
-            const allMemberBasedItems = [
-              ...memberBasedItemsToUpdate,
-              ...savedNewItems,
-            ];
-
-            // Use a Map to deduplicate items by ID
-            const uniqueMemberBasedItemsMap = new Map();
-            for (const item of allMemberBasedItems) {
-              uniqueMemberBasedItemsMap.set(item.id, item);
-            }
-
-            // Convert the map values back to an array
-            event.memberBasedItems = Array.from(
-              uniqueMemberBasedItemsMap.values(),
-            );
-          } catch (error) {
-            console.error('Error creating new member-based items:', error);
-            throw new Error('Failed to create new member-based event items');
-          }
-        } else if (memberBasedItemsToUpdate.length > 0) {
-          // If we only updated items but didn't create new ones, update the array
-          event.memberBasedItems = [...memberBasedItemsToUpdate];
+        if (itemsToCreate.length > 0) {
+          const newItems = itemsToCreate.map((item) =>
+            this.memberBasedEventItemsRepository.create({
+              ...item,
+              event,
+            }),
+          );
+          await this.memberBasedEventItemsRepository.save(newItems);
         }
       } catch (error) {
-        if (error instanceof BadRequestException) {
-          throw error;
-        } else {
-          console.error('Error updating event member-based items:', error);
-          throw new Error('Error al actualizar los ítems del evento');
-        }
+        console.error('Error during member-based items update:', error);
+        throw error;
       }
     }
 
-    // Save the updated event
-    await this.eventsRepository.save(event);
-
-    // Return the updated event with all relations
-    return this.findOne(id);
+    return event;
   }
 
   async remove(id: number): Promise<void> {

@@ -105,8 +105,8 @@ export class ResultsService {
 
         resultItems.push(resultItem);
 
-        // Calculate weighted score
-        totalScore += (item.score * eventItem.percentage) / 100;
+        // Calculate score directly without percentage
+        totalScore += item.score;
       }
 
       // Save result items
@@ -150,8 +150,8 @@ export class ResultsService {
 
         resultMemberBasedItems.push(resultMemberBasedItem);
 
-        // Calculate weighted score
-        totalScore += (score * eventItem.percentage) / 100;
+        // Calculate score directly without percentage
+        totalScore += score;
       }
 
       // Save result member-based items
@@ -380,8 +380,8 @@ export class ResultsService {
             });
 
             resultItems.push(resultItem);
-            // Calculate weighted score
-            totalScore += (item.score * eventItemAlt.percentage) / 100;
+            // Calculate score directly without percentage
+            totalScore += item.score;
             continue; // Continuar con el siguiente item
           }
 
@@ -399,8 +399,8 @@ export class ResultsService {
 
         resultItems.push(resultItem);
 
-        // Calculate weighted score
-        totalScore += (item.score * eventItem.percentage) / 100;
+        // Calculate score directly without percentage
+        totalScore += item.score;
       }
 
       // Save result items
@@ -480,9 +480,13 @@ export class ResultsService {
         // Recalcular el total
         let totalScore = 0;
         for (const item of result.items) {
-          // Asegurarse de que este cálculo corresponde con tu lógica de negocio
-          if (item.eventItem && item.eventItem.percentage) {
-            totalScore += (item.score * item.eventItem.percentage) / 100;
+          if (item.eventItem) {
+            totalScore += item.score;
+          }
+        }
+        for (const item of result.memberBasedItems) {
+          if (item.eventItem) {
+            totalScore += item.score;
           }
         }
 
