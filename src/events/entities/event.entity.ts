@@ -4,40 +4,54 @@ import {
   Column,
   ManyToOne,
   OneToMany,
+  JoinColumn,
 } from 'typeorm';
 import { Camp } from '../../camps/entities/camp.entity';
 import { EventItem } from './event-item.entity';
 import { Result } from '../../results/entities/result.entity';
-import { MemberBasedEventItem } from './member-based-event-item.entity';
+import { ApiProperty } from '@nestjs/swagger';
 
 @Entity()
 export class Event {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @ApiProperty({ description: 'The unique identifier of the event' })
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
+  @ApiProperty({ description: 'The name of the event' })
   @Column()
   name: string;
 
+  @ApiProperty({ description: 'The description of the event', required: false })
   @Column({ nullable: true })
   description: string;
 
+  @ApiProperty({
+    description: 'The type of the event',
+    enum: ['REGULAR'],
+    default: 'REGULAR',
+  })
   @Column({ default: 'REGULAR' })
-  type: string; // 'REGULAR' or 'MEMBER_BASED'
+  type: string; // 'REGULAR'
 
-  @Column({ type: 'integer' })
-  maxScore: number;
-
-  @ManyToOne(() => Camp, (camp) => camp.events)
+  @ApiProperty({
+    description: 'The camp this event belongs to',
+    type: () => Camp,
+  })
+  @ManyToOne(() => Camp, (camp) => camp.events, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'campId' })
   camp: Camp;
 
+  @ApiProperty({
+    description: 'List of regular event items',
+    type: () => [EventItem],
+  })
   @OneToMany(() => EventItem, (item) => item.event, { cascade: true })
   items: EventItem[];
 
-  @OneToMany(() => MemberBasedEventItem, (item) => item.event, {
-    cascade: true,
+  @ApiProperty({
+    description: 'List of results for this event',
+    type: () => [Result],
   })
-  memberBasedItems: MemberBasedEventItem[];
-
   @OneToMany(() => Result, (result) => result.event)
   results: Result[];
 }

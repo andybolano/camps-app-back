@@ -6,66 +6,69 @@ import {
   Patch,
   Param,
   Delete,
-  UseGuards,
-  Query,
 } from '@nestjs/common';
 import { ResultsService } from './results.service';
 import { CreateResultDto } from './dto/create-result.dto';
 import { UpdateResultDto } from './dto/update-result.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Result } from './entities/result.entity';
 
+@ApiTags('results')
 @Controller('results')
-@UseGuards(JwtAuthGuard)
 export class ResultsController {
   constructor(private readonly resultsService: ResultsService) {}
 
   @Post()
+  @ApiOperation({ summary: 'Create a new result' })
+  @ApiResponse({
+    status: 201,
+    description: 'The result has been successfully created.',
+    type: Result,
+  })
   create(@Body() createResultDto: CreateResultDto) {
     return this.resultsService.create(createResultDto);
   }
 
   @Get()
-  findAll(
-    @Query('clubId') clubId?: string,
-    @Query('eventId') eventId?: string,
-    @Query('campId') campId?: string,
-  ) {
-    if (eventId && clubId) {
-      console.log(
-        `[DEBUG] Consultando resultados para eventId=${eventId} y clubId=${clubId}`,
-      );
-      return this.resultsService.findByEventAndClub(+eventId, +clubId);
-    }
-    
-    if (clubId) {
-      return this.resultsService.findByClub(+clubId);
-    }
-    if (eventId) {
-      return this.resultsService.findByEvent(+eventId);
-    }
-    if (campId) {
-      return this.resultsService.findByCamp(+campId);
-    }
+  @ApiOperation({ summary: 'Get all results' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of all results.',
+    type: [Result],
+  })
+  findAll() {
     return this.resultsService.findAll();
   }
 
-  @Get('ranking/:campId')
-  getClubRankingByCamp(@Param('campId') campId: string) {
-    return this.resultsService.getClubRankingByCamp(+campId);
-  }
-
   @Get(':id')
+  @ApiOperation({ summary: 'Get a result by id' })
+  @ApiResponse({
+    status: 200,
+    description: 'The found result.',
+    type: Result,
+  })
   findOne(@Param('id') id: string) {
-    return this.resultsService.findOne(+id);
+    return this.resultsService.findOne(id);
   }
 
   @Patch(':id')
+  @ApiOperation({ summary: 'Update a result' })
+  @ApiResponse({
+    status: 200,
+    description: 'The result has been successfully updated.',
+    type: Result,
+  })
   update(@Param('id') id: string, @Body() updateResultDto: UpdateResultDto) {
-    return this.resultsService.update(+id, updateResultDto);
+    return this.resultsService.update(id, updateResultDto);
   }
 
   @Delete(':id')
+  @ApiOperation({ summary: 'Delete a result' })
+  @ApiResponse({
+    status: 200,
+    description: 'The result has been successfully deleted.',
+  })
   remove(@Param('id') id: string) {
-    return this.resultsService.remove(+id);
+    return this.resultsService.remove(id);
   }
 }

@@ -3,58 +3,40 @@ import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import * as dotenv from 'dotenv';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 // Load environment variables
 dotenv.config();
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  app.setGlobalPrefix('api');
 
-  // Enable CORS with specific origin in development mode
-  const isDev = process.env.NODE_ENV !== 'production';
-  if (isDev) {
-    app.enableCors({
-      origin: '*',
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization'],
-      credentials: true,
-    });
-  } else {
-    app.enableCors({
-      origin: '*',
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization'],
-      credentials: true,
-    });
-  }
+  // Configurar CORS
+  app.enableCors();
 
-  // Only serve static assets in production mode
-  if (!isDev) {
-    app.useStaticAssets(
-      join(__dirname, '..', '..', 'frontend/dist/frontend/browser'),
-    );
+  // Configurar Swagger
+  const config = new DocumentBuilder()
+    .setTitle('Campamento App API')
+    .setDescription(
+      'API para la gestión de eventos y resultados de campamentos',
+    )
+    .setVersion('1.0')
+    .addBearerAuth()
+    .addTag('auth', 'Endpoints relacionados con autenticación y autorización')
+    .addTag('users', 'Endpoints para la gestión de usuarios')
+    .addTag('events', 'Endpoints para la gestión de eventos')
+    .addTag('clubs', 'Endpoints para la gestión de clubes')
+    .addTag('camps', 'Endpoints para la gestión de campamentos')
+    .addTag('results', 'Endpoints para la gestión de resultados')
+    .addTag('health', 'Endpoints para verificar el estado del sistema')
+    .build();
 
-    // Wildcard middleware para rutas no-API (solo en producción)
-    app.use('*', (req, res, next) => {
-      if (req.originalUrl.startsWith('/api')) {
-        next();
-      } else {
-        res.sendFile(
-          join(
-            __dirname,
-            '..',
-            '..',
-            'frontend/dist/frontend/browser/index.html',
-          ),
-        );
-      }
-    });
-  }
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api', app, document);
 
-  const port = process.env.PORT || 3000;
-  await app.listen(port);
-  console.log(`Application running on: ${await app.getUrl()}`);
-  console.log(`Environment: ${isDev ? 'development' : 'production'}`);
+  // Configurar archivos estáticos
+  app.useStaticAssets(join(__dirname, '..', 'public'));
+
+  await app.listen(process.env.PORT || 3000);
 }
 bootstrap();

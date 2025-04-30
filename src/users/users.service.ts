@@ -8,8 +8,11 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import { User } from './entities/user.entity';
+import { User, UserRole } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { Club } from '../clubs/entities/club.entity';
+import { Association } from '../associations/entities/association.entity';
 
 @Injectable()
 export class UsersService implements OnModuleInit {
@@ -18,6 +21,10 @@ export class UsersService implements OnModuleInit {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    @InjectRepository(Club)
+    private clubsRepository: Repository<Club>,
+    @InjectRepository(Association)
+    private associationsRepository: Repository<Association>,
   ) {}
 
   async onModuleInit() {
@@ -53,7 +60,7 @@ export class UsersService implements OnModuleInit {
         const adminUser = this.usersRepository.create({
           username: 'admin',
           password: hashedPassword,
-          role: 'admin',
+          role: UserRole.ADMINISTRADOR,
         });
 
         await this.usersRepository.save(adminUser);
@@ -68,7 +75,7 @@ export class UsersService implements OnModuleInit {
   }
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    const { username, password, role } = createUserDto;
+    const { username, password, role, clubId, associationId } = createUserDto;
 
     // Check if user already exists
     const existingUser = await this.usersRepository.findOne({
@@ -81,11 +88,32 @@ export class UsersService implements OnModuleInit {
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Find club if provided
+    let club: Club | null = null;
+    if (clubId) {
+      club = await this.clubsRepository.findOne({
+        where: { id: clubId },
+      });
+      if (!club) {
+        throw new NotFoundException('Club not found');
+      }
+    }
+
+    // Find association
+    const association = await this.associationsRepository.findOne({
+      where: { id: associationId },
+    });
+    if (!association) {
+      throw new NotFoundException('Association not found');
+    }
+
     // Create the user
     const user = this.usersRepository.create({
       username,
       password: hashedPassword,
-      role: role || 'user',
+      role: role || UserRole.DIRECTOR,
+      club,
+      association,
     });
 
     return this.usersRepository.save(user);
@@ -101,5 +129,25 @@ export class UsersService implements OnModuleInit {
 
   async findByUsername(username: string): Promise<User | undefined> {
     return this.usersRepository.findOne({ where: { username } });
+  }
+
+  async findAll(): Promise<User[]> {
+    return this.usersRepository.find();
+  }
+
+  async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
+    const user = await this.findOne(id);
+
+    if (updateUserDto.password) {
+      updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
+    }
+
+    Object.assign(user, updateUserDto);
+    return this.usersRepository.save(user);
+  }
+
+  async remove(id: number): Promise<void> {
+    const user = await this.findOne(id);
+    await this.usersRepository.remove(user);
   }
 }

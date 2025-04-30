@@ -1,46 +1,43 @@
-import { Type } from 'class-transformer';
+import { ApiProperty } from '@nestjs/swagger';
 import {
-  IsArray,
-  IsNumber,
-  IsOptional,
   IsString,
-  ValidateNested,
   IsEnum,
+  IsArray,
+  ValidateNested,
+  IsOptional,
 } from 'class-validator';
-import { UpdateEventItemDto } from './update-event-item.dto';
+import { Type } from 'class-transformer';
+import { CreateEventItemDto } from './create-event-item.dto';
 import { EventType } from './create-event.dto';
-import { UpdateMemberBasedEventItemDto } from './update-member-based-event-item.dto';
 
 export class UpdateEventDto {
-  @IsOptional()
+  @ApiProperty({ description: 'The name of the event', required: false })
   @IsString()
+  @IsOptional()
   name?: string;
 
-  @IsOptional()
+  @ApiProperty({ description: 'The description of the event', required: false })
   @IsString()
+  @IsOptional()
   description?: string;
 
-  @IsOptional()
-  @IsNumber()
-  campId?: number;
-
-  @IsOptional()
-  @IsNumber()
-  maxScore?: number;
-
+  @ApiProperty({
+    description: 'The type of event',
+    enum: EventType,
+    required: false,
+  })
   @IsEnum(EventType)
   @IsOptional()
   type?: EventType;
 
-  @IsOptional()
+  @ApiProperty({
+    description: 'List of event items',
+    type: () => [CreateEventItemDto],
+    required: false,
+  })
   @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => UpdateEventItemDto)
-  items?: UpdateEventItemDto[];
-
   @IsOptional()
-  @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => UpdateMemberBasedEventItemDto)
-  memberBasedItems?: UpdateMemberBasedEventItemDto[];
+  @Type(() => CreateEventItemDto)
+  items?: CreateEventItemDto[];
 }

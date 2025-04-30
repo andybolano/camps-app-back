@@ -2,66 +2,68 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
+  ManyToMany,
+  JoinTable,
   OneToMany,
+  ManyToOne,
 } from 'typeorm';
 import { Camp } from '../../camps/entities/camp.entity';
-import { Result } from '../../results/entities/result.entity';
-import { MemberCharacteristic } from './member-characteristic.entity';
+import { User } from '../../users/entities/user.entity';
+import { Member } from './member.entity';
+import { ApiProperty } from '@nestjs/swagger';
 
 @Entity()
 export class Club {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @ApiProperty({ description: 'The unique identifier of the club' })
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
+  @ApiProperty({ description: 'The name of the club' })
   @Column()
   name: string;
 
-  @Column()
+  @ApiProperty({ description: 'The slogan of the club' })
+  @Column({ nullable: true })
+  slogan: string;
+
+  @ApiProperty({ description: 'The city of the club' })
+  @Column({ default: 'Barranquilla' })
   city: string;
 
-  @Column()
-  participantsCount: number;
-
-  @Column()
-  guestsCount: number;
-
-  @Column({ default: 0 })
-  minorsCount: number;
-
-  @Column()
-  economsCount: number;
-
-  @Column({ default: 0 })
-  companionsCount: number;
-
-  @Column({ default: 0 })
-  directorCount: number;
-
-  @Column({ default: 0 })
-  pastorCount: number;
-
-  @Column({ type: 'float' })
-  registrationFee: number;
-
-  @Column({ type: 'boolean', default: true })
-  isPaid: boolean;
-
+  @ApiProperty({ description: 'The foundation date of the club' })
   @Column({ nullable: true })
-  shieldUrl: string;
+  foundationDate: Date;
 
-  @ManyToOne(() => Camp, (camp) => camp.clubs)
-  camp: Camp;
+  @ApiProperty({ description: 'The shield image URL of the club' })
+  @Column({ nullable: true })
+  shield: string;
 
-  @OneToMany(() => Result, (result) => result.club)
-  results: Result[];
+  @ApiProperty({
+    description: 'The camps this club belongs to',
+    type: () => [Camp],
+  })
+  @ManyToMany(() => Camp, (camp) => camp.clubs)
+  @JoinTable()
+  camps: Camp[];
 
-  @OneToMany(
-    () => MemberCharacteristic,
-    (characteristic) => characteristic.club,
-    {
-      cascade: true,
-    },
-  )
-  memberCharacteristics: MemberCharacteristic[];
+  @ApiProperty({
+    description: 'The users that belong to this club',
+    type: () => [User],
+  })
+  @OneToMany(() => User, (user) => user.club)
+  users: User[];
+
+  @ApiProperty({
+    description: 'The director of the club',
+    type: () => User,
+  })
+  @ManyToOne(() => User, (user) => user.directedClubs)
+  director: User;
+
+  @ApiProperty({
+    description: 'The members that belong to this club',
+    type: () => [Member],
+  })
+  @OneToMany(() => Member, (member) => member.club)
+  members: Member[];
 }

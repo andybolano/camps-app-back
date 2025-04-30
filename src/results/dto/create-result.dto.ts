@@ -1,36 +1,19 @@
-import {
-  IsNotEmpty,
-  IsNumber,
-  IsArray,
-  ValidateNested,
-  IsOptional,
-} from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsArray, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateResultItemDto } from './create-result-item.dto';
-import { CreateResultMemberBasedItemDto } from './create-result-member-based-item.dto';
 
 export class CreateResultDto {
-  @IsNotEmpty()
-  @IsNumber()
-  clubId: number;
+  @ApiProperty({ description: 'The ID of the event this result belongs to' })
+  @IsString()
+  eventId: string;
 
-  @IsNotEmpty()
-  @IsNumber()
-  eventId: number;
-
+  @ApiProperty({
+    description: 'List of result items',
+    type: () => [CreateResultItemDto],
+  })
   @IsArray()
-  @IsOptional()
   @ValidateNested({ each: true })
   @Type(() => CreateResultItemDto)
-  items?: CreateResultItemDto[];
-
-  @IsArray()
-  @IsOptional()
-  @ValidateNested({ each: true })
-  @Type(() => CreateResultMemberBasedItemDto)
-  memberBasedItems?: CreateResultMemberBasedItemDto[];
-
-  @IsOptional()
-  @IsNumber()
-  totalScore?: number;
+  items: CreateResultItemDto[];
 }

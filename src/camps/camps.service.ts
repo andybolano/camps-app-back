@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -9,6 +10,7 @@ import { Camp } from './entities/camp.entity';
 import { CreateCampDto } from './dto/create-camp.dto';
 import { UpdateCampDto } from './dto/update-camp.dto';
 import { FilesService } from '../common/services/files.service';
+import { UserRole } from '../users/entities/user.entity';
 
 @Injectable()
 export class CampsService {
@@ -21,7 +23,15 @@ export class CampsService {
   async create(
     createCampDto: CreateCampDto,
     logo?: Express.Multer.File,
+    userRole?: UserRole,
   ): Promise<Camp> {
+    // Verificar que el usuario sea administrador
+    if (userRole !== UserRole.ADMINISTRADOR) {
+      throw new ForbiddenException(
+        'Solo los administradores pueden crear campamentos',
+      );
+    }
+
     const camp = this.campsRepository.create(createCampDto);
 
     // Si se proporciona un logo, guardarlo
@@ -42,7 +52,7 @@ export class CampsService {
     return this.campsRepository.find();
   }
 
-  async findOne(id: number): Promise<Camp> {
+  async findOne(id: string): Promise<Camp> {
     const camp = await this.campsRepository.findOne({
       where: { id },
       relations: ['clubs', 'events'],
@@ -56,7 +66,7 @@ export class CampsService {
   }
 
   async update(
-    id: number,
+    id: string,
     updateCampDto: UpdateCampDto,
     logo?: Express.Multer.File,
   ): Promise<Camp> {
@@ -81,7 +91,7 @@ export class CampsService {
     return this.campsRepository.save(camp);
   }
 
-  async remove(id: number): Promise<void> {
+  async remove(id: string): Promise<void> {
     // Primero buscar el campamento con sus relaciones
     const camp = await this.findOne(id);
 

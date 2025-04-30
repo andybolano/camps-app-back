@@ -1,53 +1,39 @@
+import { ApiProperty } from '@nestjs/swagger';
 import {
-  IsNotEmpty,
   IsString,
-  IsOptional,
-  IsNumber,
+  IsEnum,
   IsArray,
   ValidateNested,
-  ArrayMinSize,
-  IsEnum,
+  IsOptional,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateEventItemDto } from './create-event-item.dto';
-import { CreateMemberBasedEventItemDto } from './create-member-based-event-item.dto';
 
 export enum EventType {
   REGULAR = 'REGULAR',
-  MEMBER_BASED = 'MEMBER_BASED',
 }
 
 export class CreateEventDto {
-  @IsNotEmpty()
+  @ApiProperty({ description: 'The name of the event' })
   @IsString()
   name: string;
 
-  @IsOptional()
+  @ApiProperty({ description: 'The description of the event' })
   @IsString()
-  description?: string;
+  description: string;
 
-  @IsNotEmpty()
-  @IsNumber()
-  campId: number;
-
-  @IsNumber()
-  @IsNotEmpty()
-  maxScore: number;
-
+  @ApiProperty({ description: 'The type of event', enum: EventType })
   @IsEnum(EventType)
-  @IsOptional()
-  type?: EventType = EventType.REGULAR;
+  type: EventType;
 
+  @ApiProperty({
+    description: 'List of event items',
+    type: () => [CreateEventItemDto],
+    required: false,
+  })
   @IsArray()
-  @ArrayMinSize(1)
+  @IsOptional()
   @ValidateNested({ each: true })
   @Type(() => CreateEventItemDto)
-  @IsOptional()
   items?: CreateEventItemDto[];
-
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => CreateMemberBasedEventItemDto)
-  @IsOptional()
-  memberBasedItems?: CreateMemberBasedEventItemDto[];
 }

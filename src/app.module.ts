@@ -10,6 +10,7 @@ import { ResultsModule } from './results/results.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { HealthModule } from './health/health.module';
+import { AssociationsModule } from './associations/associations.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { HealthModule } from './health/health.module';
     UsersModule,
     AuthModule,
     HealthModule,
+    AssociationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
