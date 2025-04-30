@@ -8,7 +8,6 @@ import {
 } from 'typeorm';
 import { Camp } from '../../camps/entities/camp.entity';
 import { EventItem } from './event-item.entity';
-import { Result } from '../../results/entities/result.entity';
 import { ApiProperty } from '@nestjs/swagger';
 
 @Entity()
@@ -48,10 +47,4 @@ export class Event {
   @OneToMany(() => EventItem, (item) => item.event, { cascade: true })
   items: EventItem[];
 
-  @ApiProperty({
-    description: 'List of results for this event',
-    type: () => [Result],
-  })
-  @OneToMany(() => Result, (result) => result.event)
-  results: Result[];
 }

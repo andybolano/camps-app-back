@@ -1,5 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  OneToMany,
+} from 'typeorm';
 import { Event } from './event.entity';
+import { ResultItem } from '../../results/entities/result-item.entity';
 import { ApiProperty } from '@nestjs/swagger';
 
 @Entity()
@@ -28,4 +35,7 @@ export class EventItem {
   })
   @ManyToOne(() => Event, (event) => event.items)
   event: Event;
+
+  @OneToMany(() => ResultItem, (resultItem) => resultItem.eventItem)
+  resultItems: ResultItem[];
 }

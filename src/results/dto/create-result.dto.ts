@@ -1,12 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsString, ValidateNested } from 'class-validator';
+import { IsArray, IsString, IsUUID, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateResultItemDto } from './create-result-item.dto';
 
 export class CreateResultDto {
-  @ApiProperty({ description: 'The ID of the event this result belongs to' })
+  @ApiProperty({ description: 'The ID of the club this result belongs to' })
   @IsString()
-  eventId: string;
+  @IsUUID()
+  clubId: string;
 
   @ApiProperty({
     description: 'List of result items',

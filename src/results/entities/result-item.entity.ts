@@ -1,6 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
-import { Result } from './result.entity';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { EventItem } from '../../events/entities/event-item.entity';
+import { Club } from '../../clubs/entities/club.entity';
 import { ApiProperty } from '@nestjs/swagger';
 
 @Entity()
@@ -17,13 +17,15 @@ export class ResultItem {
     description: 'The event item this result item belongs to',
     type: () => EventItem,
   })
-  @ManyToOne(() => EventItem)
+  @ManyToOne(() => EventItem, (eventItem) => eventItem.resultItems, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'eventItemId' })
   eventItem: EventItem;
 
   @ApiProperty({
-    description: 'The result this item belongs to',
-    type: () => Result,
+    description: 'The club that obtained this score',
+    type: () => Club,
   })
-  @ManyToOne(() => Result, (result) => result.items)
-  result: Result;
+  @ManyToOne(() => Club, (club) => club.resultItems, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'clubId' })
+  club: Club;
 }

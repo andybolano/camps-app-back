@@ -11,6 +11,7 @@ import { Camp } from '../../camps/entities/camp.entity';
 import { User } from '../../users/entities/user.entity';
 import { Member } from './member.entity';
 import { ApiProperty } from '@nestjs/swagger';
+import { ResultItem } from '../../results/entities/result-item.entity';
 
 @Entity()
 export class Club {
@@ -66,4 +67,7 @@ export class Club {
   })
   @OneToMany(() => Member, (member) => member.club)
   members: Member[];
+
+  @OneToMany(() => ResultItem, (resultItem) => resultItem.club)
+  resultItems: ResultItem[];
 }

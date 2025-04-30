@@ -1,12 +1,15 @@
-import { IsNotEmpty, IsNumber, Min, Max } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsNotEmpty, IsNumber, IsString, IsUUID, Min } from 'class-validator';
 
 export class CreateResultItemDto {
+  @ApiProperty({ description: 'The ID of the event item this result belongs to' })
   @IsNotEmpty()
-  @IsNumber()
-  eventItemId: number;
+  @IsString()
+  @IsUUID()
+  eventItemId: string;
 
+  @ApiProperty({ description: 'The score for this result item', minimum: 0 })
   @IsNumber()
   @Min(0)
-  @Max(10)
   score: number;
 }

@@ -1,84 +1,105 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Result } from './entities/result.entity';
 import { CreateResultDto } from './dto/create-result.dto';
 import { UpdateResultDto } from './dto/update-result.dto';
 import { ResultItem } from './entities/result-item.entity';
-import { Event } from '../events/entities/event.entity';
+import { EventItem } from '../events/entities/event-item.entity';
+import { Club } from '../clubs/entities/club.entity';
 
 @Injectable()
 export class ResultsService {
   constructor(
-    @InjectRepository(Result)
-    private readonly resultRepository: Repository<Result>,
     @InjectRepository(ResultItem)
     private readonly resultItemRepository: Repository<ResultItem>,
-    @InjectRepository(Event)
-    private readonly eventRepository: Repository<Event>,
+    @InjectRepository(EventItem)
+    private readonly eventItemRepository: Repository<EventItem>,
+    @InjectRepository(Club)
+    private readonly clubRepository: Repository<Club>,
   ) {}
 
   async create(createResultDto: CreateResultDto) {
-    const event = await this.eventRepository.findOne({
-      where: { id: createResultDto.eventId },
-    });
+    const resultItems: ResultItem[] = [];
 
-    if (!event) {
-      throw new Error('Event not found');
+    for (const item of createResultDto.items) {
+      const eventItem = await this.eventItemRepository.findOne({
+        where: { id: item.eventItemId.toString() },
+      });
+
+      if (!eventItem) {
+        throw new NotFoundException(`EventItem with ID ${item.eventItemId} not found`);
+      }
+
+      const club = await this.clubRepository.findOne({
+        where: { id: createResultDto.clubId },
+      });
+
+      if (!club) {
+        throw new NotFoundException(`Club with ID ${createResultDto.clubId} not found`);
+      }
+
+      // Validate score is within maxScore
+      if (item.score > eventItem.maxScore) {
+        throw new Error(`Score ${item.score} exceeds maximum score ${eventItem.maxScore} for event item ${eventItem.name}`);
+      }
+
+      const resultItem = this.resultItemRepository.create({
+        score: item.score,
+        eventItem,
+        club,
+      });
+
+      resultItems.push(await this.resultItemRepository.save(resultItem));
     }
 
-    const result = this.resultRepository.create({
-      event,
-      items: createResultDto.items.map((item) =>
-        this.resultItemRepository.create(item),
-      ),
-    });
-
-    result.totalScore = this.calculateTotalScore(result);
-
-    return this.resultRepository.save(result);
+    return resultItems;
   }
 
-  findAll() {
-    return this.resultRepository.find({
-      relations: ['event', 'items'],
+  async findAll() {
+    return this.resultItemRepository.find({
+      relations: ['eventItem', 'club', 'eventItem.event'],
     });
   }
 
   async findOne(id: string) {
-    const result = await this.resultRepository.findOne({
+    const resultItem = await this.resultItemRepository.findOne({
       where: { id },
-      relations: ['event', 'items'],
+      relations: ['eventItem', 'club', 'eventItem.event'],
     });
 
-    if (!result) {
-      throw new Error('Result not found');
+    if (!resultItem) {
+      throw new NotFoundException(`ResultItem with ID ${id} not found`);
     }
 
-    return result;
+    return resultItem;
   }
 
   async update(id: string, updateResultDto: UpdateResultDto) {
-    const result = await this.findOne(id);
+    const resultItem = await this.findOne(id);
 
-    if (updateResultDto.items) {
-      result.items = updateResultDto.items.map((item) =>
-        this.resultItemRepository.create(item),
-      );
+    if (updateResultDto.items && updateResultDto.items.length > 0) {
+      const item = updateResultDto.items[0]; // Only use first item for direct updates
+      
+      if (item.score !== undefined) {
+        // Validate max score
+        const eventItem = await this.eventItemRepository.findOne({
+          where: { id: resultItem.eventItem.id },
+        });
+        
+        if (item.score > eventItem.maxScore) {
+          throw new Error(`Score ${item.score} exceeds maximum score ${eventItem.maxScore}`);
+        }
+        
+        resultItem.score = item.score;
+      }
     }
 
-    result.totalScore = this.calculateTotalScore(result);
-
-    return this.resultRepository.save(result);
+    return this.resultItemRepository.save(resultItem);
   }
 
   async remove(id: string) {
-    const result = await this.findOne(id);
-    return this.resultRepository.remove(result);
-  }
-
-  private calculateTotalScore(result: Result): number {
-    return result.items.reduce((total, item) => total + item.score, 0);
+    const resultItem = await this.findOne(id);
+    return this.resultItemRepository.remove(resultItem);
   }
 
   async deleteResultItemsByEventItem(eventItemId: string): Promise<void> {

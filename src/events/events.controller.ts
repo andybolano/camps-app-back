@@ -6,15 +6,20 @@ import {
   Patch,
   Param,
   Delete,
+  UseGuards,
+  ForbiddenException,
 } from '@nestjs/common';
 import { EventsService } from './events.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { CreateEventItemDto } from './dto/create-event-item.dto';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { Event } from './entities/event.entity';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('events')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('events')
 export class EventsController {
   constructor(private readonly eventsService: EventsService) {}
