@@ -1,18 +1,23 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsArray, IsString, IsUUID, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
-import { CreateResultItemDto } from './create-result-item.dto';
+
+export class CreateResultItemDto {
+  @ApiProperty({ description: 'The event item ID' })
+  @IsUUID()
+  eventItemId: string;
+
+  @ApiProperty({ description: 'The score for this event item' })
+  @IsString()
+  score: number;
+}
 
 export class CreateResultDto {
-  @ApiProperty({ description: 'The ID of the club this result belongs to' })
-  @IsString()
+  @ApiProperty({ description: 'The club ID' })
   @IsUUID()
   clubId: string;
 
-  @ApiProperty({
-    description: 'List of result items',
-    type: () => [CreateResultItemDto],
-  })
+  @ApiProperty({ description: 'The result items', type: [CreateResultItemDto] })
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateResultItemDto)

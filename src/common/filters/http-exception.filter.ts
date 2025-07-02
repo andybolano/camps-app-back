@@ -9,6 +9,12 @@ import {
 import { Request, Response } from 'express';
 import { QueryFailedError } from 'typeorm';
 
+interface HttpExceptionResponse {
+  message: string | string[];
+  error?: string;
+  [key: string]: any;
+}
+
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger(AllExceptionsFilter.name);
@@ -25,15 +31,17 @@ export class AllExceptionsFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       // Handle NestJS HTTP exceptions
       status = exception.getStatus();
-      const errorResponse = exception.getResponse();
-      message = typeof errorResponse === 'object' && 'message' in errorResponse 
-        ? Array.isArray(errorResponse['message']) 
-          ? errorResponse['message'].join(', ') 
-          : errorResponse['message'] 
-        : exception.message;
-      error = typeof errorResponse === 'object' && 'error' in errorResponse 
-        ? errorResponse['error'] 
-        : 'Error';
+      const errorResponse = exception.getResponse() as HttpExceptionResponse;
+      message =
+        typeof errorResponse === 'object' && 'message' in errorResponse
+          ? Array.isArray(errorResponse.message)
+            ? errorResponse.message.join(', ')
+            : errorResponse.message.toString()
+          : exception.message;
+      error =
+        typeof errorResponse === 'object' && 'error' in errorResponse
+          ? errorResponse.error?.toString() || 'Error'
+          : 'Error';
     } else if (exception instanceof QueryFailedError) {
       // Handle TypeORM database errors
       status = HttpStatus.BAD_REQUEST;
@@ -58,7 +66,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
         exception instanceof Error ? exception.stack : '',
       );
     } else if (status >= 400) {
-      this.logger.warn(`[${request.method}] ${request.url} - ${status}: ${message}`);
+      this.logger.warn(
+        `[${request.method}] ${request.url} - ${status}: ${message}`,
+      );
     }
 
     // Structure the error response

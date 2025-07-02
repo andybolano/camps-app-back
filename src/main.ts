@@ -5,7 +5,7 @@ import { join } from 'path';
 import * as dotenv from 'dotenv';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
-import * as helmet from 'helmet';
+import helmet from 'helmet';
 
 // Load environment variables
 dotenv.config();
@@ -23,7 +23,9 @@ async function bootstrap() {
   if (process.env.NODE_ENV === 'production') {
     // Strict CORS for production
     app.enableCors({
-      origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : false,
+      origin: process.env.ALLOWED_ORIGINS
+        ? process.env.ALLOWED_ORIGINS.split(',')
+        : false,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
       credentials: true,
       maxAge: 86400, // 24 hours
@@ -67,7 +69,10 @@ async function bootstrap() {
     .build();
 
   // Only enable Swagger in non-production environments for security
-  if (process.env.NODE_ENV !== 'production' || process.env.ENABLE_SWAGGER === 'true') {
+  if (
+    process.env.NODE_ENV !== 'production' ||
+    process.env.ENABLE_SWAGGER === 'true'
+  ) {
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('api', app, document);
   }
@@ -82,7 +87,7 @@ async function bootstrap() {
 
   // Start server with graceful shutdown
   const server = await app.listen(process.env.PORT || 3000);
-  
+
   // Setup graceful shutdown
   process.on('SIGTERM', async () => {
     console.log('SIGTERM received. Shutting down gracefully...');
@@ -90,6 +95,8 @@ async function bootstrap() {
     process.exit(0);
   });
 
-  console.log(`Server running on ${await app.getUrl()} in ${process.env.NODE_ENV || 'development'} mode`);
+  console.log(
+    `Server running on ${await app.getUrl()} in ${process.env.NODE_ENV || 'development'} mode`,
+  );
 }
 bootstrap();
