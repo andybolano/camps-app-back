@@ -2,17 +2,17 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreateInitialSchema1712822400000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // Drop existing tables in reverse order
-    await queryRunner.query(`DROP TABLE IF EXISTS "result_member_based_item"`);
-    await queryRunner.query(`DROP TABLE IF EXISTS "result_item"`);
-    await queryRunner.query(`DROP TABLE IF EXISTS "result"`);
-    await queryRunner.query(`DROP TABLE IF EXISTS "member_based_event_item"`);
-    await queryRunner.query(`DROP TABLE IF EXISTS "event_item"`);
-    await queryRunner.query(`DROP TABLE IF EXISTS "event"`);
-    await queryRunner.query(`DROP TABLE IF EXISTS "member_characteristic"`);
-    await queryRunner.query(`DROP TABLE IF EXISTS "club"`);
-    await queryRunner.query(`DROP TABLE IF EXISTS "camp"`);
-    await queryRunner.query(`DROP TABLE IF EXISTS "user"`);
+    // Drop existing tables in reverse order with CASCADE to handle dependencies
+    await queryRunner.query(`DROP TABLE IF EXISTS "result_member_based_item" CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "result_item" CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "result" CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "member_based_event_item" CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "event_item" CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "event" CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "member_characteristic" CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "club" CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "camp" CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "user" CASCADE`);
 
     // Create user table first
     await queryRunner.query(`
@@ -180,16 +180,16 @@ export class CreateInitialSchema1712822400000 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    // Drop tables in reverse order
-    await queryRunner.query(`DROP TABLE IF EXISTS "result_member_based_item"`);
-    await queryRunner.query(`DROP TABLE IF EXISTS "result_item"`);
-    await queryRunner.query(`DROP TABLE IF EXISTS "result"`);
-    await queryRunner.query(`DROP TABLE IF EXISTS "member_based_event_item"`);
-    await queryRunner.query(`DROP TABLE IF EXISTS "event_item"`);
-    await queryRunner.query(`DROP TABLE IF EXISTS "event"`);
-    await queryRunner.query(`DROP TABLE IF EXISTS "member_characteristic"`);
-    await queryRunner.query(`DROP TABLE IF EXISTS "club"`);
-    await queryRunner.query(`DROP TABLE IF EXISTS "camp"`);
-    await queryRunner.query(`DROP TABLE IF EXISTS "user"`);
+    // Drop tables in reverse order with CASCADE to handle dependencies
+    await queryRunner.query(`DROP TABLE IF EXISTS "result_member_based_item" CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "result_item" CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "result" CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "member_based_event_item" CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "event_item" CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "event" CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "member_characteristic" CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "club" CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "camp" CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "user" CASCADE`);
   }
 }
