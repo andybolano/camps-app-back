@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { ResultsService } from './results.service';
 import { CreateResultDto } from './dto/create-result.dto';
+import { CreateBulkResultDto } from './dto/create-bulk-result.dto';
 import { UpdateResultDto } from './dto/update-result.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -22,6 +23,11 @@ export class ResultsController {
   @Post()
   create(@Body() createResultDto: CreateResultDto) {
     return this.resultsService.create(createResultDto);
+  }
+
+  @Post('bulk')
+  createBulk(@Body() createBulkResultDto: CreateBulkResultDto) {
+    return this.resultsService.createBulk(createBulkResultDto);
   }
 
   @Get()

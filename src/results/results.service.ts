@@ -11,6 +11,7 @@ import { Result } from './entities/result.entity';
 import { ResultItem } from './entities/result-item.entity';
 import { ResultMemberBasedItem } from './entities/result-member-based-item.entity';
 import { CreateResultDto } from './dto/create-result.dto';
+import { CreateBulkResultDto } from './dto/create-bulk-result.dto';
 import { UpdateResultDto } from './dto/update-result.dto';
 import { ClubsService } from '../clubs/clubs.service';
 import { EventsService } from '../events/events.service';
@@ -172,6 +173,65 @@ export class ResultsService {
     await this.resultsRepository.save(result);
 
     return result;
+  }
+
+  async createBulk(createBulkResultDto: CreateBulkResultDto): Promise<Result[]> {
+    const { eventId, results: resultDtos } = createBulkResultDto;
+
+    // Validate that the event exists
+    const event = await this.eventsService.findOne(eventId);
+    
+    const createdResults: Result[] = [];
+    const errors: string[] = [];
+
+    // Process each result
+    for (let i = 0; i < resultDtos.length; i++) {
+      const resultDto = resultDtos[i];
+      
+      try {
+        // Ensure the eventId matches
+        const finalResultDto = { ...resultDto, eventId };
+        
+        // Check if result already exists for this club and event
+        const existingResult = await this.resultsRepository.findOne({
+          where: {
+            club: { id: resultDto.clubId },
+            event: { id: eventId },
+          },
+        });
+
+        let result: Result;
+
+        if (existingResult) {
+          // Update existing result
+          console.log(`Updating existing result for club ${resultDto.clubId} and event ${eventId}`);
+          const updateDto = {
+            ...resultDto,
+            eventId,
+          };
+          result = await this.update(existingResult.id, updateDto);
+        } else {
+          // Create new result
+          console.log(`Creating new result for club ${resultDto.clubId} and event ${eventId}`);
+          result = await this.create(finalResultDto);
+        }
+
+        createdResults.push(result);
+        
+      } catch (error) {
+        errors.push(`Error processing result for club ${resultDto.clubId}: ${error.message}`);
+        console.error(`Error processing bulk result for club ${resultDto.clubId}:`, error);
+      }
+    }
+
+    // If there were any errors, log them but don't fail the entire operation
+    if (errors.length > 0) {
+      console.warn('Bulk operation completed with errors:', errors);
+    }
+
+    console.log(`Bulk operation completed: ${createdResults.length} results processed (created/updated), ${errors.length} errors`);
+    
+    return createdResults;
   }
 
   async findAll(): Promise<Result[]> {
