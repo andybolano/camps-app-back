@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Club } from './entities/club.entity';
@@ -6,12 +6,21 @@ import { CreateClubDto } from './dto/create-club.dto';
 import { UpdateClubDto } from './dto/update-club.dto';
 import { CampsService } from '../camps/camps.service';
 import { FilesService } from '../common/services/files.service';
+import { Result } from '../results/entities/result.entity';
+import { ResultItem } from '../results/entities/result-item.entity';
+import { ResultMemberBasedItem } from '../results/entities/result-member-based-item.entity';
 
 @Injectable()
 export class ClubsService {
   constructor(
     @InjectRepository(Club)
     private clubsRepository: Repository<Club>,
+    @InjectRepository(Result)
+    private resultsRepository: Repository<Result>,
+    @InjectRepository(ResultItem)
+    private resultItemsRepository: Repository<ResultItem>,
+    @InjectRepository(ResultMemberBasedItem)
+    private resultMemberBasedItemsRepository: Repository<ResultMemberBasedItem>,
     private campsService: CampsService,
     private filesService: FilesService,
   ) {}
@@ -108,19 +117,68 @@ export class ClubsService {
   }
 
   async remove(id: number): Promise<void> {
-    const club = await this.findOne(id);
-
-    // Delete the shield if it exists
-    if (club.shieldUrl) {
-      await this.filesService.deleteFile(club.shieldUrl).catch((error) => {
-        console.error(`Error al eliminar escudo: ${error.message}`);
-        // No interrumpimos la eliminación si hay error al eliminar
+    try {
+      // Cargar el club con todos sus resultados y sus elementos relacionados
+      const club = await this.clubsRepository.findOne({
+        where: { id },
+        relations: [
+          'camp',
+          'results',
+          'results.items',
+          'results.memberBasedItems',
+          'memberCharacteristics'
+        ],
       });
-    }
 
-    const result = await this.clubsRepository.delete(id);
-    if (result.affected === 0) {
-      throw new NotFoundException(`Club with ID ${id} not found`);
+      if (!club) {
+        throw new NotFoundException(`Club with ID ${id} not found`);
+      }
+
+      // Eliminar todos los datos relacionados al club en cascada manual
+      if (club.results && club.results.length > 0) {
+        const resultIds = club.results.map(result => result.id);
+        
+        // 1. Eliminar todos los result_items
+        await this.resultItemsRepository
+          .createQueryBuilder()
+          .delete()
+          .where('resultId IN (:...resultIds)', { resultIds })
+          .execute();
+        
+        // 2. Eliminar todos los result_member_based_items
+        await this.resultMemberBasedItemsRepository
+          .createQueryBuilder()
+          .delete()
+          .where('resultId IN (:...resultIds)', { resultIds })
+          .execute();
+        
+        // 3. Eliminar los results
+        await this.resultsRepository.delete(resultIds);
+        
+        console.log(`Se eliminaron ${club.results.length} resultado(s) y todos sus elementos asociados al club "${club.name}"`);
+      }
+
+      // Delete the shield if it exists
+      if (club.shieldUrl) {
+        await this.filesService.deleteFile(club.shieldUrl).catch((error) => {
+          console.error(`Error al eliminar escudo: ${error.message}`);
+          // No interrumpimos la eliminación si hay error al eliminar
+        });
+      }
+
+      // Eliminar el club
+      const result = await this.clubsRepository.delete(id);
+      if (result.affected === 0) {
+        throw new NotFoundException(`Club with ID ${id} not found`);
+      }
+
+      console.log(`Club "${club.name}" eliminado exitosamente junto con todos sus datos asociados`);
+    } catch (error) {
+      console.error('Error al eliminar club:', error);
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException(`Error al eliminar el club: ${error.message}`);
     }
   }
 }
