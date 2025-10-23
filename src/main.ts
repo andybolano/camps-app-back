@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { join } from 'path';
 import * as dotenv from 'dotenv';
 
@@ -10,6 +11,26 @@ dotenv.config();
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.setGlobalPrefix('api');
+
+  // Swagger configuration
+  const config = new DocumentBuilder()
+    .setTitle('Campamento App API')
+    .setDescription('API documentation for Campamento App - Sistema de gestión de campamentos para clubes de Aventureros, Conquistadores y Guías Mayores')
+    .setVersion('2.0')
+    .addTag('Auth', 'Endpoints de autenticación y autorización')
+    .addTag('Clubs', 'Gestión de clubes independientes')
+    .addTag('Categories', 'Categorías de clubes (Aventureros, Conquistadores, Guías Mayores)')
+    .addTag('Camps', 'Gestión de campamentos')
+    .addTag('Camp Registrations', 'Registro de clubes a campamentos')
+    .addTag('Events', 'Plantillas de eventos (reusables)')
+    .addTag('Camp Events', 'Eventos instanciados en campamentos específicos')
+    .addTag('Results', 'Resultados de eventos por club')
+    .addTag('Users', 'Gestión de usuarios')
+    .addBearerAuth()
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document);
 
   // Enable CORS with specific origin in development mode
   const isDev = process.env.NODE_ENV !== 'production';

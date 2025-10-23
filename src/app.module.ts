@@ -10,6 +10,8 @@ import { ResultsModule } from './results/results.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { HealthModule } from './health/health.module';
+import { CampRegistrationsModule } from './camp-registrations/camp-registrations.module';
+import { CampEventsModule } from './camp-events/camp-events.module';
 
 @Module({
   imports: [
@@ -17,7 +19,9 @@ import { HealthModule } from './health/health.module';
     CommonModule,
     CampsModule,
     ClubsModule,
+    CampRegistrationsModule,
     EventsModule,
+    CampEventsModule,
     ResultsModule,
     UsersModule,
     AuthModule,

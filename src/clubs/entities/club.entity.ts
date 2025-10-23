@@ -2,12 +2,11 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
   OneToMany,
+  CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
-import { Camp } from '../../camps/entities/camp.entity';
-import { Result } from '../../results/entities/result.entity';
-import { MemberCharacteristic } from './member-characteristic.entity';
+import { ClubCategory } from './club-category.entity';
 
 @Entity()
 export class Club {
@@ -20,48 +19,20 @@ export class Club {
   @Column()
   city: string;
 
-  @Column()
-  participantsCount: number;
-
-  @Column()
-  guestsCount: number;
-
-  @Column({ default: 0 })
-  minorsCount: number;
-
-  @Column()
-  economsCount: number;
-
-  @Column({ default: 0 })
-  companionsCount: number;
-
-  @Column({ default: 0 })
-  directorCount: number;
-
-  @Column({ default: 0 })
-  pastorCount: number;
-
-  @Column({ type: 'float' })
-  registrationFee: number;
-
-  @Column({ type: 'boolean', default: true })
-  isPaid: boolean;
+  @Column({ nullable: true })
+  motto: string;
 
   @Column({ nullable: true })
   shieldUrl: string;
 
-  @ManyToOne(() => Camp, (camp) => camp.clubs)
-  camp: Camp;
+  @CreateDateColumn()
+  createdAt: Date;
 
-  @OneToMany(() => Result, (result) => result.club)
-  results: Result[];
+  @UpdateDateColumn()
+  updatedAt: Date;
 
-  @OneToMany(
-    () => MemberCharacteristic,
-    (characteristic) => characteristic.club,
-    {
-      cascade: true,
-    },
-  )
-  memberCharacteristics: MemberCharacteristic[];
+  @OneToMany(() => ClubCategory, (clubCategory) => clubCategory.club, {
+    cascade: true,
+  })
+  clubCategories: ClubCategory[];
 }

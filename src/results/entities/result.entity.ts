@@ -5,7 +5,8 @@ import {
   ManyToOne,
   OneToMany,
 } from 'typeorm';
-import { Club } from '../../clubs/entities/club.entity';
+import { CampRegistration } from '../../camp-registrations/entities/camp-registration.entity';
+import { CampEvent } from '../../camp-events/entities/camp-event.entity';
 import { ResultItem } from './result-item.entity';
 import { ResultMemberBasedItem } from './result-member-based-item.entity';
 
@@ -17,11 +18,14 @@ export class Result {
   @Column({ type: 'float', default: 0 })
   totalScore: number;
 
-  @ManyToOne(() => Club, (club) => club.results)
-  club: Club;
+  @ManyToOne(
+    () => CampRegistration,
+    (registration) => registration.results,
+  )
+  campRegistration: CampRegistration;
 
-  @ManyToOne('Event', 'results')
-  event: any;
+  @ManyToOne(() => CampEvent, (campEvent) => campEvent.results)
+  campEvent: CampEvent;
 
   @OneToMany(() => ResultItem, (resultItem) => resultItem.result, {
     cascade: true,

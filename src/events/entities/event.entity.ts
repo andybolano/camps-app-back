@@ -4,10 +4,11 @@ import {
   Column,
   ManyToOne,
   OneToMany,
+  CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
-import { Camp } from '../../camps/entities/camp.entity';
+import { Category } from '../../categories/entities/category.entity';
 import { EventItem } from './event-item.entity';
-import { Result } from '../../results/entities/result.entity';
 import { MemberBasedEventItem } from './member-based-event-item.entity';
 
 @Entity()
@@ -27,8 +28,14 @@ export class Event {
   @Column({ type: 'integer' })
   maxScore: number;
 
-  @ManyToOne(() => Camp, (camp) => camp.events)
-  camp: Camp;
+  @ManyToOne(() => Category, { nullable: true })
+  category: Category;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 
   @OneToMany(() => EventItem, (item) => item.event, { cascade: true })
   items: EventItem[];
@@ -37,7 +44,4 @@ export class Event {
     cascade: true,
   })
   memberBasedItems: MemberBasedEventItem[];
-
-  @OneToMany(() => Result, (result) => result.event)
-  results: Result[];
 }

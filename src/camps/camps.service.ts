@@ -36,7 +36,7 @@ export class CampsService {
   async findAll(includeRelations = false): Promise<Camp[]> {
     if (includeRelations) {
       return this.campsRepository.find({
-        relations: ['clubs', 'events'],
+        relations: ['registrations', 'campEvents'],
       });
     }
     return this.campsRepository.find();
@@ -45,7 +45,7 @@ export class CampsService {
   async findOne(id: number): Promise<Camp> {
     const camp = await this.campsRepository.findOne({
       where: { id },
-      relations: ['clubs', 'events'],
+      relations: ['registrations', 'campEvents'],
     });
 
     if (!camp) {
@@ -85,13 +85,13 @@ export class CampsService {
     // Primero buscar el campamento con sus relaciones
     const camp = await this.findOne(id);
 
-    // Verificar si tiene clubes o eventos relacionados
+    // Verificar si tiene registraciones o eventos relacionados
     if (
-      (camp.clubs && camp.clubs.length > 0) ||
-      (camp.events && camp.events.length > 0)
+      (camp.registrations && camp.registrations.length > 0) ||
+      (camp.campEvents && camp.campEvents.length > 0)
     ) {
       throw new BadRequestException(
-        'No se puede eliminar el campamento porque tiene clubes o eventos relacionados.',
+        'No se puede eliminar el campamento porque tiene inscripciones de clubes o eventos relacionados.',
       );
     }
 

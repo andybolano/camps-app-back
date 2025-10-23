@@ -1,69 +1,49 @@
-import {
-  IsNotEmpty,
-  IsString,
-  IsNumber,
-  IsPositive,
-  IsBoolean,
-  IsOptional,
-  IsArray,
-  ValidateNested,
-} from 'class-validator';
-import { Transform, Type } from 'class-transformer';
-import { CreateMemberCharacteristicDto } from './create-member-characteristic.dto';
+import { IsNotEmpty, IsString, IsOptional, IsArray, IsNumber } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateClubDto {
+  @ApiProperty({
+    description: 'Nombre del club',
+    example: 'Club Maranatha',
+  })
   @IsNotEmpty()
   @IsString()
   name: string;
 
+  @ApiProperty({
+    description: 'Ciudad donde se ubica el club',
+    example: 'Barranquilla',
+  })
   @IsNotEmpty()
   @IsString()
   city: string;
 
-  @IsNumber()
-  @IsPositive()
-  participantsCount: number;
-
-  @IsNumber()
-  @IsPositive()
-  guestsCount: number;
-
-  @IsNumber()
-  @IsPositive()
-  minorsCount: number;
-
-  @IsNumber()
-  @IsPositive()
-  economsCount: number;
-
-  @IsNumber()
-  @IsPositive()
-  companionsCount: number;
-
-  @IsNumber()
-  @IsPositive()
-  registrationFee: number;
-
-  @IsOptional()
-  @IsBoolean()
-  @Transform(({ value }) => {
-    if (value === '1' || value === 'true' || value === true) return true;
-    if (value === '0' || value === 'false' || value === false) return false;
-    return Boolean(value);
+  @ApiProperty({
+    description: 'Lema o motto del club',
+    example: 'Unidos en Cristo',
+    required: false,
   })
-  isPaid?: boolean;
+  @IsOptional()
+  @IsString()
+  motto?: string;
 
+  @ApiProperty({
+    description: 'Array de IDs de categorías del club (1: Guías Mayores, 2: Conquistadores, 3: Aventureros)',
+    example: [1, 2],
+    type: [Number],
+    required: false,
+  })
+  @IsOptional()
+  @IsArray()
+  @IsNumber({}, { each: true })
+  categoryIds?: number[];
+
+  @ApiProperty({
+    description: 'URL del escudo del club (se genera automáticamente al subir el archivo)',
+    example: 'uploads/shields/club-123.png',
+    required: false,
+  })
   @IsOptional()
   @IsString()
   shieldUrl?: string;
-
-  @IsNotEmpty()
-  @IsNumber()
-  campId: number;
-
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => CreateMemberCharacteristicDto)
-  memberCharacteristics?: CreateMemberCharacteristicDto[];
 }

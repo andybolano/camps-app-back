@@ -1,6 +1,13 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-import { Club } from '../../clubs/entities/club.entity';
-import { Event } from '../../events/entities/event.entity';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToMany,
+  ManyToOne,
+} from 'typeorm';
+import { CampRegistration } from '../../camp-registrations/entities/camp-registration.entity';
+import { Category } from '../../categories/entities/category.entity';
+import { CampEvent } from '../../camp-events/entities/camp-event.entity';
 
 @Entity()
 export class Camp {
@@ -25,9 +32,12 @@ export class Camp {
   @Column({ nullable: true })
   logoUrl: string;
 
-  @OneToMany(() => Club, (club) => club.camp)
-  clubs: Club[];
+  @ManyToOne(() => Category, { nullable: true })
+  targetCategory: Category;
 
-  @OneToMany(() => Event, (event) => event.camp)
-  events: Event[];
+  @OneToMany(() => CampRegistration, (registration) => registration.camp)
+  registrations: CampRegistration[];
+
+  @OneToMany(() => CampEvent, (campEvent) => campEvent.camp)
+  campEvents: CampEvent[];
 }

@@ -1,18 +1,15 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { EventsService } from './events.service';
 import { EventsController } from './events.controller';
 import { Event } from './entities/event.entity';
 import { EventItem } from './entities/event-item.entity';
 import { MemberBasedEventItem } from './entities/member-based-event-item.entity';
-import { CampsModule } from '../camps/camps.module';
-import { ResultsModule } from '../results/results.module';
+import { Category } from '../categories/entities/category.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Event, EventItem, MemberBasedEventItem]),
-    CampsModule,
-    forwardRef(() => ResultsModule), // Usamos forwardRef para evitar dependencias circulares
+    TypeOrmModule.forFeature([Event, EventItem, MemberBasedEventItem, Category]),
   ],
   controllers: [EventsController],
   providers: [EventsService],

@@ -3,14 +3,15 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ClubsService } from './clubs.service';
 import { ClubsController } from './clubs.controller';
 import { Club } from './entities/club.entity';
-import { CampsModule } from '../camps/camps.module';
+import { ClubCategory } from './entities/club-category.entity';
+import { Category } from '../categories/entities/category.entity';
 import { CommonModule } from '../common/common.module';
-import { Result } from '../results/entities/result.entity';
-import { ResultItem } from '../results/entities/result-item.entity';
-import { ResultMemberBasedItem } from '../results/entities/result-member-based-item.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Club, Result, ResultItem, ResultMemberBasedItem]), CampsModule, CommonModule],
+  imports: [
+    TypeOrmModule.forFeature([Club, ClubCategory, Category]),
+    CommonModule,
+  ],
   controllers: [ClubsController],
   providers: [ClubsService],
   exports: [ClubsService],
