@@ -52,9 +52,13 @@ export class CampsController {
         location: 'Parque Nacional Tayrona',
         description: 'Gran campamento nacional con actividades para todas las categorías',
         logoUrl: 'uploads/logos/camp-1.png',
-        isActive: true,
-        createdAt: '2025-01-18T08:00:00.000Z',
-        updatedAt: '2025-01-18T08:00:00.000Z'
+        targetCategory: {
+          id: 1,
+          name: 'Guías Mayores',
+          code: 'GM',
+          description: 'Categoría para jóvenes de 16 años en adelante',
+          isActive: true
+        }
       }
     }
   })
@@ -64,7 +68,7 @@ export class CampsController {
     schema: {
       example: {
         statusCode: 400,
-        message: ['name no debe estar vacío', 'startDate debe ser una fecha válida'],
+        message: ['name no debe estar vacío', 'startDate debe ser una fecha válida', 'targetCategoryId no debe estar vacío'],
         error: 'Bad Request'
       }
     }
@@ -77,6 +81,17 @@ export class CampsController {
         statusCode: 401,
         message: 'No autorizado',
         error: 'Unauthorized'
+      }
+    }
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Categoría no encontrada',
+    schema: {
+      example: {
+        statusCode: 404,
+        message: 'Category with ID 10 not found or is not active',
+        error: 'Not Found'
       }
     }
   })
@@ -111,9 +126,13 @@ export class CampsController {
           location: 'Parque Nacional Tayrona',
           description: 'Gran campamento nacional con actividades para todas las categorías',
           logoUrl: 'uploads/logos/camp-1.png',
-          isActive: true,
-          createdAt: '2025-01-18T08:00:00.000Z',
-          updatedAt: '2025-01-18T08:00:00.000Z',
+          targetCategory: {
+            id: 1,
+            name: 'Guías Mayores',
+            code: 'GM',
+            description: 'Categoría para jóvenes de 16 años en adelante',
+            isActive: true
+          },
           campRegistrations: [
             {
               id: 1,
@@ -152,9 +171,13 @@ export class CampsController {
           location: 'Parque Los Caimanes',
           description: 'Campamento regional para clubes de la costa atlántica',
           logoUrl: 'uploads/logos/camp-2.png',
-          isActive: true,
-          createdAt: '2025-01-20T10:00:00.000Z',
-          updatedAt: '2025-01-20T10:00:00.000Z'
+          targetCategory: {
+            id: 2,
+            name: 'Conquistadores',
+            code: 'CQ',
+            description: 'Categoría para niños y adolescentes de 10 a 15 años',
+            isActive: true
+          }
         }
       ]
     }
@@ -197,10 +220,14 @@ export class CampsController {
         location: 'Parque Nacional Tayrona',
         description: 'Gran campamento nacional con actividades para todas las categorías',
         logoUrl: 'uploads/logos/camp-1.png',
-        isActive: true,
-        createdAt: '2025-01-18T08:00:00.000Z',
-        updatedAt: '2025-01-18T08:00:00.000Z',
-        campRegistrations: [
+        targetCategory: {
+          id: 1,
+          name: 'Guías Mayores',
+          code: 'GM',
+          description: 'Categoría para jóvenes de 16 años en adelante',
+          isActive: true
+        },
+        registrations: [
           {
             id: 1,
             numberOfParticipants: 25,
@@ -288,20 +315,35 @@ export class CampsController {
         location: 'Parque Nacional Tayrona',
         description: 'Gran campamento nacional con actividades ampliadas para todas las categorías',
         logoUrl: 'uploads/logos/camp-1-updated.png',
-        isActive: true,
-        createdAt: '2025-01-18T08:00:00.000Z',
-        updatedAt: '2025-01-27T16:30:00.000Z'
+        targetCategory: {
+          id: 1,
+          name: 'Guías Mayores',
+          code: 'GM',
+          description: 'Categoría para jóvenes de 16 años en adelante',
+          isActive: true
+        }
       }
     }
   })
   @ApiResponse({
     status: 404,
-    description: 'Campamento no encontrado',
+    description: 'Campamento o categoría no encontrados',
     schema: {
-      example: {
-        statusCode: 404,
-        message: 'Campamento con ID 10 no encontrado',
-        error: 'Not Found'
+      examples: {
+        campNotFound: {
+          value: {
+            statusCode: 404,
+            message: 'Camp with ID 10 not found',
+            error: 'Not Found'
+          }
+        },
+        categoryNotFound: {
+          value: {
+            statusCode: 404,
+            message: 'Category with ID 5 not found or is not active',
+            error: 'Not Found'
+          }
+        }
       }
     }
   })

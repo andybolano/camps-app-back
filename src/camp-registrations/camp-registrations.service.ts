@@ -20,26 +20,52 @@ export class CampRegistrationsService {
   async create(
     createRegistrationDto: CreateCampRegistrationDto,
   ): Promise<CampRegistration> {
-    const { campId, clubCategoryId, ...registrationData } =
+    const { campId, clubId, categoryId, ...registrationData } =
       createRegistrationDto;
 
     // Verify camp exists
     const camp = await this.campsService.findOne(campId);
 
-    // Verify club category exists
+    // Verify that the camp's target category matches the requested category
+    if (camp.targetCategory.id !== categoryId) {
+      throw new NotFoundException(
+        `This camp is for category ${camp.targetCategory.name} (ID: ${camp.targetCategory.id}), not for category ID ${categoryId}`,
+      );
+    }
+
+    // Find the club category relationship
     const clubCategory = await this.clubCategoryRepository.findOne({
-      where: { id: clubCategoryId },
+      where: {
+        club: { id: clubId },
+        category: { id: categoryId },
+        isActive: true,
+      },
       relations: ['club', 'category'],
     });
 
     if (!clubCategory) {
       throw new NotFoundException(
-        `ClubCategory with ID ${clubCategoryId} not found`,
+        `Club with ID ${clubId} does not have an active category with ID ${categoryId}. Please verify that the club has this category assigned.`,
+      );
+    }
+
+    // Check if this club is already registered for this camp in this category
+    const existingRegistration = await this.registrationsRepository.findOne({
+      where: {
+        camp: { id: campId },
+        clubCategory: { id: clubCategory.id },
+      },
+    });
+
+    if (existingRegistration) {
+      throw new NotFoundException(
+        `Club ${clubCategory.club.name} (${clubCategory.category.name}) is already registered for this camp`,
       );
     }
 
     const registration = this.registrationsRepository.create({
       ...registrationData,
+      registrationFee: registrationData.registrationFee ?? 0,
       camp,
       clubCategory,
     });

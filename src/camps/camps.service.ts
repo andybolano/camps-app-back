@@ -6,6 +6,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Camp } from './entities/camp.entity';
+import { Category } from '../categories/entities/category.entity';
 import { CreateCampDto } from './dto/create-camp.dto';
 import { UpdateCampDto } from './dto/update-camp.dto';
 import { FilesService } from '../common/services/files.service';
@@ -15,6 +16,8 @@ export class CampsService {
   constructor(
     @InjectRepository(Camp)
     private campsRepository: Repository<Camp>,
+    @InjectRepository(Category)
+    private categoryRepository: Repository<Category>,
     private filesService: FilesService,
   ) {}
 
@@ -22,7 +25,21 @@ export class CampsService {
     createCampDto: CreateCampDto,
     logo?: Express.Multer.File,
   ): Promise<Camp> {
-    const camp = this.campsRepository.create(createCampDto);
+    // Validar que la categoría existe y está activa
+    const category = await this.categoryRepository.findOne({
+      where: { id: createCampDto.targetCategoryId, isActive: true },
+    });
+
+    if (!category) {
+      throw new NotFoundException(
+        `Category with ID ${createCampDto.targetCategoryId} not found or is not active`,
+      );
+    }
+
+    const camp = this.campsRepository.create({
+      ...createCampDto,
+      targetCategory: category,
+    });
 
     // Si se proporciona un logo, guardarlo
     if (logo) {
@@ -36,16 +53,18 @@ export class CampsService {
   async findAll(includeRelations = false): Promise<Camp[]> {
     if (includeRelations) {
       return this.campsRepository.find({
-        relations: ['registrations', 'campEvents'],
+        relations: ['registrations', 'campEvents', 'targetCategory'],
       });
     }
-    return this.campsRepository.find();
+    return this.campsRepository.find({
+      relations: ['targetCategory'],
+    });
   }
 
   async findOne(id: number): Promise<Camp> {
     const camp = await this.campsRepository.findOne({
       where: { id },
-      relations: ['registrations', 'campEvents'],
+      relations: ['registrations', 'campEvents', 'targetCategory'],
     });
 
     if (!camp) {
@@ -61,6 +80,21 @@ export class CampsService {
     logo?: Express.Multer.File,
   ): Promise<Camp> {
     const camp = await this.findOne(id);
+
+    // Si se proporciona una nueva categoría, validar que existe y está activa
+    if (updateCampDto.targetCategoryId) {
+      const category = await this.categoryRepository.findOne({
+        where: { id: updateCampDto.targetCategoryId, isActive: true },
+      });
+
+      if (!category) {
+        throw new NotFoundException(
+          `Category with ID ${updateCampDto.targetCategoryId} not found or is not active`,
+        );
+      }
+
+      camp.targetCategory = category;
+    }
 
     // Si se proporciona un nuevo logo
     if (logo) {

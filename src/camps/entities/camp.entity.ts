@@ -4,6 +4,7 @@ import {
   Column,
   OneToMany,
   ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { CampRegistration } from '../../camp-registrations/entities/camp-registration.entity';
 import { Category } from '../../categories/entities/category.entity';
@@ -32,7 +33,8 @@ export class Camp {
   @Column({ nullable: true })
   logoUrl: string;
 
-  @ManyToOne(() => Category, { nullable: true })
+  @ManyToOne(() => Category, { nullable: false })
+  @JoinColumn({ name: 'targetCategoryId' })
   targetCategory: Category;
 
   @OneToMany(() => CampRegistration, (registration) => registration.camp)

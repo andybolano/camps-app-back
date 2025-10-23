@@ -210,6 +210,95 @@ export class ClubsController {
     return this.clubsService.findAll();
   }
 
+  @Get('by-category/:categoryId')
+  @ApiOperation({
+    summary: 'Listar clubes por categoría',
+    description: 'Obtiene una lista de todos los clubes que tienen asociada una categoría específica'
+  })
+  @ApiParam({
+    name: 'categoryId',
+    description: 'ID de la categoría (1: Guías Mayores, 2: Conquistadores, 3: Aventureros)',
+    type: Number,
+    example: 1
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de clubes de la categoría obtenida exitosamente',
+    schema: {
+      example: [
+        {
+          id: 1,
+          name: 'Club Maranatha',
+          city: 'Barranquilla',
+          motto: 'Unidos en Cristo',
+          shieldUrl: 'uploads/shields/club-1.png',
+          createdAt: '2025-01-15T10:30:00.000Z',
+          updatedAt: '2025-01-15T10:30:00.000Z',
+          clubCategories: [
+            {
+              id: 1,
+              isActive: true,
+              createdAt: '2025-01-15T10:30:00.000Z',
+              category: {
+                id: 1,
+                name: 'Guías Mayores',
+                description: 'Categoría para jóvenes de 16 años en adelante',
+                code: 'GM'
+              }
+            }
+          ]
+        },
+        {
+          id: 3,
+          name: 'Club Senderos de Luz',
+          city: 'Santa Marta',
+          motto: 'Iluminando el camino',
+          shieldUrl: 'uploads/shields/club-3.png',
+          createdAt: '2025-01-17T09:15:00.000Z',
+          updatedAt: '2025-01-17T09:15:00.000Z',
+          clubCategories: [
+            {
+              id: 5,
+              isActive: true,
+              createdAt: '2025-01-17T09:15:00.000Z',
+              category: {
+                id: 1,
+                name: 'Guías Mayores',
+                description: 'Categoría para jóvenes de 16 años en adelante',
+                code: 'GM'
+              }
+            }
+          ]
+        }
+      ]
+    }
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Categoría no encontrada',
+    schema: {
+      example: {
+        statusCode: 404,
+        message: 'Category with ID 10 not found or is not active',
+        error: 'Not Found'
+      }
+    }
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'No autorizado',
+    schema: {
+      example: {
+        statusCode: 401,
+        message: 'No autorizado',
+        error: 'Unauthorized'
+      }
+    }
+  })
+  findByCategory(@Param('categoryId') categoryId: string) {
+    return this.clubsService.findByCategory(+categoryId);
+  }
+
   @Get(':id')
   @ApiOperation({
     summary: 'Obtener un club por ID',

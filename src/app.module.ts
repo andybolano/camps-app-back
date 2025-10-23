@@ -12,6 +12,7 @@ import { AuthModule } from './auth/auth.module';
 import { HealthModule } from './health/health.module';
 import { CampRegistrationsModule } from './camp-registrations/camp-registrations.module';
 import { CampEventsModule } from './camp-events/camp-events.module';
+import { CategoriesModule } from './categories/categories.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { CampEventsModule } from './camp-events/camp-events.module';
     CampsModule,
     ClubsModule,
     CampRegistrationsModule,
+    CategoriesModule,
     EventsModule,
     CampEventsModule,
     ResultsModule,

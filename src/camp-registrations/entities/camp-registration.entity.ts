@@ -42,7 +42,7 @@ export class CampRegistration {
   @Column({ default: 0 })
   pastorCount: number;
 
-  @Column({ type: 'float' })
+  @Column({ type: 'float', default: 0 })
   registrationFee: number;
 
   @Column({ type: 'boolean', default: false })

@@ -71,6 +71,30 @@ export class ClubsService {
     return club;
   }
 
+  async findByCategory(categoryId: number): Promise<Club[]> {
+    // Verificar que la categoría existe
+    const category = await this.categoryRepository.findOne({
+      where: { id: categoryId, isActive: true },
+    });
+
+    if (!category) {
+      throw new NotFoundException(
+        `Category with ID ${categoryId} not found or is not active`,
+      );
+    }
+
+    // Buscar clubes que tengan esta categoría activa
+    const clubs = await this.clubsRepository
+      .createQueryBuilder('club')
+      .leftJoinAndSelect('club.clubCategories', 'clubCategory')
+      .leftJoinAndSelect('clubCategory.category', 'category')
+      .where('clubCategory.categoryId = :categoryId', { categoryId })
+      .andWhere('clubCategory.isActive = :isActive', { isActive: true })
+      .getMany();
+
+    return clubs;
+  }
+
   async update(
     id: number,
     updateClubDto: UpdateClubDto,

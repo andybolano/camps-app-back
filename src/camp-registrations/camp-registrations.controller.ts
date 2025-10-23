@@ -34,7 +34,7 @@ export class CampRegistrationsController {
   @Post()
   @ApiOperation({
     summary: 'Registrar un club a un campamento',
-    description: 'Registra una categoría específica de un club a un campamento con todos los detalles de participación y costos'
+    description: 'Registra un club con una categoría específica a un campamento. Solo requiere campId, clubId y categoryId. Los demás campos son opcionales y se pueden actualizar después.'
   })
   @ApiResponse({
     status: 201,
@@ -42,23 +42,27 @@ export class CampRegistrationsController {
     schema: {
       example: {
         id: 1,
-        campId: 1,
-        clubCategoryId: 1,
-        numberOfParticipants: 25,
-        numberOfLeaders: 3,
-        numberOfGuests: 5,
-        totalParticipants: 33,
-        totalCost: 1650000,
+        participantsCount: 0,
+        guestsCount: 0,
+        minorsCount: 0,
+        economsCount: 0,
+        companionsCount: 0,
+        directorCount: 0,
+        pastorCount: 0,
+        registrationFee: 0,
         isPaid: false,
-        paymentDate: null,
-        createdAt: '2025-01-18T09:30:00.000Z',
-        updatedAt: '2025-01-18T09:30:00.000Z',
+        registrationDate: '2025-01-18T09:30:00.000Z',
         camp: {
           id: 1,
           name: 'Campamento Nacional 2025',
           startDate: '2025-03-15T00:00:00.000Z',
           endDate: '2025-03-18T00:00:00.000Z',
-          location: 'Parque Nacional Tayrona'
+          location: 'Parque Nacional Tayrona',
+          targetCategory: {
+            id: 1,
+            name: 'Guías Mayores',
+            code: 'GM'
+          }
         },
         clubCategory: {
           id: 1,
@@ -79,23 +83,52 @@ export class CampRegistrationsController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Datos inválidos',
+    description: 'Datos inválidos o registro duplicado',
     schema: {
-      example: {
-        statusCode: 400,
-        message: ['campId debe ser un número', 'clubCategoryId no debe estar vacío'],
-        error: 'Bad Request'
+      examples: {
+        validationError: {
+          value: {
+            statusCode: 400,
+            message: ['campId debe ser un número', 'clubId no debe estar vacío', 'categoryId no debe estar vacío'],
+            error: 'Bad Request'
+          }
+        },
+        duplicateRegistration: {
+          value: {
+            statusCode: 404,
+            message: 'Club Maranatha (Guías Mayores) is already registered for this camp',
+            error: 'Not Found'
+          }
+        }
       }
     }
   })
   @ApiResponse({
     status: 404,
-    description: 'Campamento o club-categoría no encontrado',
+    description: 'Campamento, club o categoría no encontrados, o categoría incorrecta',
     schema: {
-      example: {
-        statusCode: 404,
-        message: 'Campamento con ID 10 no encontrado',
-        error: 'Not Found'
+      examples: {
+        campNotFound: {
+          value: {
+            statusCode: 404,
+            message: 'Camp with ID 10 not found',
+            error: 'Not Found'
+          }
+        },
+        clubCategoryNotFound: {
+          value: {
+            statusCode: 404,
+            message: 'Club with ID 5 does not have an active category with ID 1. Please verify that the club has this category assigned.',
+            error: 'Not Found'
+          }
+        },
+        wrongCategory: {
+          value: {
+            statusCode: 404,
+            message: 'This camp is for category Guías Mayores (ID: 1), not for category ID 2',
+            error: 'Not Found'
+          }
+        }
       }
     }
   })
