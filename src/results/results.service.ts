@@ -49,11 +49,23 @@ export class ResultsService {
       campRegistration,
       campEvent,
       totalScore: totalScore || 0,
-      items: items || [],
-      memberBasedItems: memberBasedItems || [],
     });
 
-    return this.resultsRepository.save(result);
+    const savedResult = await this.resultsRepository.save(result);
+
+    // Create items if provided
+    if (items && items.length > 0) {
+      const resultItems = items.map((itemDto) =>
+        this.resultItemsRepository.create({
+          result: savedResult,
+          eventItem: { id: itemDto.eventItemId } as any,
+          score: itemDto.score,
+        }),
+      );
+      await this.resultItemsRepository.save(resultItems);
+    }
+
+    return savedResult;
   }
 
   async findAll(): Promise<Result[]> {
@@ -83,8 +95,6 @@ export class ResultsService {
         'campEvent.eventTemplate',
         'items',
         'items.eventItem',
-        'memberBasedItems',
-        'memberBasedItems.memberBasedEventItem',
       ],
       order: {
         totalScore: 'DESC',
@@ -102,7 +112,7 @@ export class ResultsService {
         'items',
         'items.eventItem',
         'memberBasedItems',
-        'memberBasedItems.memberBasedEventItem',
+        'memberBasedItems.eventItem',
       ],
     });
   }
@@ -120,7 +130,7 @@ export class ResultsService {
         'items',
         'items.eventItem',
         'memberBasedItems',
-        'memberBasedItems.memberBasedEventItem',
+        'memberBasedItems.eventItem',
       ],
     });
 
@@ -189,29 +199,44 @@ export class ResultsService {
       );
 
       // Check if result already exists
-      const existingResult = await this.resultsRepository.findOne({
+      let existingResult = await this.resultsRepository.findOne({
         where: {
           campRegistration: { id: resultDto.campRegistrationId },
           campEvent: { id: campEventId },
         },
       });
 
+      let savedResult: Result;
+
       if (existingResult) {
-        throw new BadRequestException(
-          `A result already exists for camp registration ID ${resultDto.campRegistrationId} and camp event ID ${campEventId}`,
-        );
+        // Update existing result
+        existingResult.totalScore = resultDto.totalScore || 0;
+        savedResult = await this.resultsRepository.save(existingResult);
+
+        // Delete old items
+        await this.resultItemsRepository.delete({ result: { id: savedResult.id } });
+      } else {
+        // Create new result
+        const result = this.resultsRepository.create({
+          campRegistration,
+          campEvent,
+          totalScore: resultDto.totalScore || 0,
+        });
+        savedResult = await this.resultsRepository.save(result);
       }
 
-      // Create result
-      const result = this.resultsRepository.create({
-        campRegistration,
-        campEvent,
-        totalScore: resultDto.totalScore || 0,
-        items: resultDto.items || [],
-        memberBasedItems: resultDto.memberBasedItems || [],
-      });
+      // Create items if provided
+      if (resultDto.items && resultDto.items.length > 0) {
+        const items = resultDto.items.map((itemDto) =>
+          this.resultItemsRepository.create({
+            result: savedResult,
+            eventItem: { id: itemDto.eventItemId } as any,
+            score: itemDto.score,
+          }),
+        );
+        await this.resultItemsRepository.save(items);
+      }
 
-      const savedResult = await this.resultsRepository.save(result);
       createdResults.push(savedResult);
     }
 
@@ -246,6 +271,10 @@ export class ResultsService {
   }
 
   async getClubRankingByCamp(campId: number): Promise<any> {
+    // Get all camp events
+    const campEvents = await this.campEventsService.findByCamp(campId);
+
+    // Get all results for this camp
     const results = await this.resultsRepository
       .createQueryBuilder('result')
       .leftJoinAndSelect('result.campRegistration', 'campRegistration')
@@ -253,11 +282,17 @@ export class ResultsService {
       .leftJoinAndSelect('clubCategory.club', 'club')
       .leftJoinAndSelect('clubCategory.category', 'category')
       .leftJoinAndSelect('result.campEvent', 'campEvent')
+      .leftJoinAndSelect('campEvent.eventTemplate', 'eventTemplate')
       .where('campRegistration.campId = :campId', { campId })
       .getMany();
 
-    // Group by club and sum scores
-    const clubScores = new Map<number, { club: any; totalScore: number; category: any }>();
+    // Group by club and collect event results
+    const clubScores = new Map<number, {
+      club: any;
+      totalScore: number;
+      category: any;
+      eventScores: Map<number, number>;
+    }>();
 
     for (const result of results) {
       const clubId = result.campRegistration.clubCategory.club.id;
@@ -265,11 +300,19 @@ export class ResultsService {
       const category = result.campRegistration.clubCategory.category;
 
       if (!clubScores.has(clubId)) {
-        clubScores.set(clubId, { club, totalScore: 0, category });
+        clubScores.set(clubId, {
+          club,
+          totalScore: 0,
+          category,
+          eventScores: new Map()
+        });
       }
 
       const clubScore = clubScores.get(clubId);
       clubScore.totalScore += result.totalScore;
+
+      // Store score by event ID
+      clubScore.eventScores.set(result.campEvent.id, result.totalScore);
     }
 
     // Convert to array and sort by total score
@@ -280,6 +323,16 @@ export class ResultsService {
         club: item.club,
         category: item.category,
         totalScore: item.totalScore,
+        eventResults: campEvents.map((campEvent) => ({
+          event: {
+            id: campEvent.id,
+            name: campEvent.name,
+            description: campEvent.description,
+            type: campEvent.type,
+            maxScore: campEvent.maxScore,
+          },
+          score: item.eventScores.get(campEvent.id) || 0,
+        })),
       }));
 
     return ranking;

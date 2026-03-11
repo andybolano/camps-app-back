@@ -18,6 +18,6 @@ export class MemberBasedEventItem {
   @Column({ default: false })
   isRequired: boolean;
 
-  @ManyToOne(() => Event, (event) => event.memberBasedItems)
+  @ManyToOne(() => Event, (event) => event.memberBasedItems, { onDelete: 'CASCADE' })
   event: Event;
 }

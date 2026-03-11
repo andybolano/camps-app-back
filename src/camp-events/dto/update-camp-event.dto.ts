@@ -3,5 +3,5 @@ import { PartialType } from '@nestjs/mapped-types';
 import { CreateCampEventDto } from './create-camp-event.dto';
 
 export class UpdateCampEventDto extends PartialType(
-  OmitType(CreateCampEventDto, ['campId', 'eventTemplateId'] as const),
+  OmitType(CreateCampEventDto, ['campId'] as const),
 ) {}

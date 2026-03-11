@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   Query,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -31,58 +32,92 @@ export class CampEventsController {
 
   @Post()
   @ApiOperation({
-    summary: 'Crear instancia de evento en campamento',
-    description: 'Crea una instancia de un evento (plantilla) en un campamento específico. Permite personalizar nombre, descripción y puntaje máximo'
+    summary: 'Crear evento en campamento',
+    description:
+      'Crea un evento independiente en un campamento con sus items de evaluación. Puedes enviar items regulares y/o items basados en miembros en el mismo payload. Los items son opcionales.',
   })
   @ApiResponse({
     status: 201,
-    description: 'Instancia de evento creada exitosamente',
+    description: 'Evento creado exitosamente con sus items',
     schema: {
-      example: {
-        id: 1,
-        campId: 1,
-        eventId: 1,
-        customName: 'Nudos y Amarres - Nivel Avanzado',
-        customDescription: 'Competencia especial de nudos para el Campamento Nacional 2025',
-        customMaxScore: 100,
-        createdAt: '2025-01-23T09:00:00.000Z',
-        updatedAt: '2025-01-23T09:00:00.000Z',
-        camp: {
-          id: 1,
-          name: 'Campamento Nacional 2025',
-          startDate: '2025-03-15T00:00:00.000Z',
-          endDate: '2025-03-18T00:00:00.000Z',
-          location: 'Parque Nacional Tayrona'
-        },
-        event: {
-          id: 1,
-          name: 'Nudos y Amarres',
-          description: 'Competencia de habilidades en nudos y técnicas de amarre',
-          categoryId: 1,
-          category: {
+      examples: {
+        withItems: {
+          summary: 'Evento con items',
+          value: {
             id: 1,
-            name: 'Guías Mayores',
-            code: 'GM'
-          },
-          eventItems: [
-            {
+            isActive: true,
+            name: 'Nudos y Amarres - Campamento Nacional 2025',
+            description:
+              'Competencia de habilidades en nudos y técnicas de amarre',
+            maxScore: 100,
+            type: 'REGULAR',
+            createdAt: '2025-01-23T09:00:00.000Z',
+            updatedAt: '2025-01-23T09:00:00.000Z',
+            camp: {
               id: 1,
-              name: 'Nudo de Ocho',
-              description: 'Realizar correctamente un nudo de ocho',
-              maxScore: 10,
-              order: 1
+              name: 'Campamento Nacional 2025',
+              location: 'Parque Nacional Tayrona',
+              startDate: '2025-03-15T00:00:00.000Z',
+              endDate: '2025-03-18T00:00:00.000Z',
             },
-            {
-              id: 2,
-              name: 'Nudo Ballestrinque',
-              description: 'Realizar correctamente un nudo ballestrinque',
-              maxScore: 10,
-              order: 2
-            }
-          ]
-        }
-      }
-    }
+            items: [
+              {
+                id: 1,
+                name: 'Nudo de Ocho',
+                isActive: true,
+              },
+              {
+                id: 2,
+                name: 'Nudo Ballestrinque',
+                isActive: true,
+              },
+              {
+                id: 3,
+                name: 'Amarre Cuadrado',
+                isActive: true,
+              },
+            ],
+            memberBasedItems: [
+              {
+                id: 1,
+                name: 'Cantidad de Menores',
+                applicableCharacteristics: ['MENOR'],
+                calculationType: 'COUNT',
+                isRequired: false,
+                isActive: true,
+              },
+              {
+                id: 2,
+                name: 'Cantidad de Adultos',
+                applicableCharacteristics: ['ADULTO'],
+                calculationType: 'COUNT',
+                isRequired: false,
+                isActive: true,
+              },
+            ],
+          },
+        },
+        withoutItems: {
+          summary: 'Evento sin items',
+          value: {
+            id: 2,
+            isActive: true,
+            name: 'Carrera de Relevos',
+            description: 'Competencia deportiva',
+            maxScore: 50,
+            type: 'REGULAR',
+            createdAt: '2025-01-23T10:00:00.000Z',
+            updatedAt: '2025-01-23T10:00:00.000Z',
+            camp: {
+              id: 1,
+              name: 'Campamento Nacional 2025',
+            },
+            items: [],
+            memberBasedItems: [],
+          },
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 400,
@@ -90,10 +125,21 @@ export class CampEventsController {
     schema: {
       example: {
         statusCode: 400,
-        message: ['campId debe ser un número', 'eventId no debe estar vacío'],
-        error: 'Bad Request'
-      }
-    }
+        message: ['name should not be empty', 'maxScore must be a number'],
+        error: 'Bad Request',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Campamento no encontrado',
+    schema: {
+      example: {
+        statusCode: 404,
+        message: 'Camp with ID 10 not found',
+        error: 'Not Found',
+      },
+    },
   })
   @ApiResponse({
     status: 401,
@@ -102,9 +148,9 @@ export class CampEventsController {
       example: {
         statusCode: 401,
         message: 'No autorizado',
-        error: 'Unauthorized'
-      }
-    }
+        error: 'Unauthorized',
+      },
+    },
   })
   create(@Body() createCampEventDto: CreateCampEventDto) {
     return this.campEventsService.create(createCampEventDto);
@@ -112,78 +158,80 @@ export class CampEventsController {
 
   @Get()
   @ApiOperation({
-    summary: 'Obtener todas las instancias de eventos',
-    description: 'Obtiene todas las instancias de eventos en campamentos. Se puede filtrar por campamento usando el parámetro campId'
+    summary: 'Obtener todos los eventos de campamentos',
+    description:
+      'Obtiene todos los eventos creados en campamentos con sus items de evaluación. Se puede filtrar por campamento usando el parámetro campId. Cada evento es una instancia independiente con sus propios items.',
   })
   @ApiQuery({
     name: 'campId',
     required: false,
-    description: 'ID del campamento para filtrar instancias de eventos',
-    type: Number
+    description: 'ID del campamento para filtrar eventos',
+    type: Number,
   })
   @ApiResponse({
     status: 200,
-    description: 'Lista de instancias de eventos obtenida exitosamente',
+    description: 'Lista de eventos obtenida exitosamente',
     schema: {
       example: [
         {
           id: 1,
-          campId: 1,
-          eventId: 1,
-          customName: 'Nudos y Amarres - Nivel Avanzado',
-          customDescription: 'Competencia especial de nudos para el Campamento Nacional 2025',
-          customMaxScore: 100,
+          isActive: true,
+          name: 'Nudos y Amarres - Campamento Nacional 2025',
+          description:
+            'Competencia de habilidades en nudos y técnicas de amarre',
+          maxScore: 100,
+          type: 'REGULAR',
           createdAt: '2025-01-23T09:00:00.000Z',
           updatedAt: '2025-01-23T09:00:00.000Z',
           camp: {
             id: 1,
             name: 'Campamento Nacional 2025',
+            location: 'Parque Nacional Tayrona',
             startDate: '2025-03-15T00:00:00.000Z',
             endDate: '2025-03-18T00:00:00.000Z',
-            location: 'Parque Nacional Tayrona'
           },
-          event: {
-            id: 1,
-            name: 'Nudos y Amarres',
-            description: 'Competencia de habilidades en nudos y técnicas de amarre',
-            categoryId: 1,
-            category: {
+          items: [
+            {
               id: 1,
-              name: 'Guías Mayores',
-              code: 'GM'
-            }
-          }
+              name: 'Nudo de Ocho',
+              isActive: true,
+            },
+            {
+              id: 2,
+              name: 'Nudo Ballestrinque',
+              isActive: true,
+            },
+          ],
+          memberBasedItems: [
+            {
+              id: 1,
+              name: 'Cantidad de Menores',
+              applicableCharacteristics: ['MENOR'],
+              calculationType: 'COUNT',
+              isRequired: false,
+              isActive: true,
+            },
+          ],
         },
         {
           id: 2,
-          campId: 1,
-          eventId: 2,
-          customName: null,
-          customDescription: null,
-          customMaxScore: null,
+          isActive: true,
+          name: 'Carrera de Relevos',
+          description: 'Competencia deportiva especial',
+          maxScore: 50,
+          type: 'REGULAR',
           createdAt: '2025-01-23T10:30:00.000Z',
           updatedAt: '2025-01-23T10:30:00.000Z',
           camp: {
             id: 1,
             name: 'Campamento Nacional 2025',
-            startDate: '2025-03-15T00:00:00.000Z',
-            endDate: '2025-03-18T00:00:00.000Z',
-            location: 'Parque Nacional Tayrona'
+            location: 'Parque Nacional Tayrona',
           },
-          event: {
-            id: 2,
-            name: 'Primeros Auxilios',
-            description: 'Evaluación de conocimientos y práctica de primeros auxilios',
-            categoryId: 2,
-            category: {
-              id: 2,
-              name: 'Conquistadores',
-              code: 'CONQ'
-            }
-          }
-        }
-      ]
-    }
+          items: [],
+          memberBasedItems: [],
+        },
+      ],
+    },
   })
   @ApiResponse({
     status: 401,
@@ -192,9 +240,9 @@ export class CampEventsController {
       example: {
         statusCode: 401,
         message: 'No autorizado',
-        error: 'Unauthorized'
-      }
-    }
+        error: 'Unauthorized',
+      },
+    },
   })
   findAll(@Query('campId') campId?: string) {
     if (campId) {
@@ -203,76 +251,87 @@ export class CampEventsController {
     return this.campEventsService.findAll();
   }
 
-  @Get(':id')
+  @Get('results')
   @ApiOperation({
-    summary: 'Obtener instancia de evento por ID',
-    description: 'Obtiene una instancia de evento específica por su ID'
+    summary: 'Obtener resultados de un evento de campamento',
+    description:
+      'Obtiene todos los resultados (scores) de un evento específico de campamento, ordenados por puntaje total descendente. Incluye información del club, evento, e items evaluados.',
   })
-  @ApiParam({
-    name: 'id',
-    description: 'ID de la instancia de evento',
-    type: Number
+  @ApiQuery({
+    name: 'eventId',
+    required: true,
+    description: 'ID del evento de campamento',
+    type: Number,
+    example: 13,
   })
   @ApiResponse({
     status: 200,
-    description: 'Instancia de evento obtenida exitosamente',
+    description: 'Lista de resultados obtenida exitosamente',
     schema: {
-      example: {
-        id: 1,
-        campId: 1,
-        eventId: 1,
-        customName: 'Nudos y Amarres - Nivel Avanzado',
-        customDescription: 'Competencia especial de nudos para el Campamento Nacional 2025',
-        customMaxScore: 100,
-        createdAt: '2025-01-23T09:00:00.000Z',
-        updatedAt: '2025-01-23T09:00:00.000Z',
-        camp: {
+      example: [
+        {
           id: 1,
-          name: 'Campamento Nacional 2025',
-          startDate: '2025-03-15T00:00:00.000Z',
-          endDate: '2025-03-18T00:00:00.000Z',
-          location: 'Parque Nacional Tayrona'
-        },
-        event: {
-          id: 1,
-          name: 'Nudos y Amarres',
-          description: 'Competencia de habilidades en nudos y técnicas de amarre',
-          categoryId: 1,
-          category: {
-            id: 1,
-            name: 'Guías Mayores',
-            code: 'GM'
+          eventId: 13,
+          clubId: 5,
+          totalScore: 85.5,
+          rank: 1,
+          event: {
+            id: 13,
+            name: 'Nudos y Amarres',
+            date: '2025-03-15T00:00:00.000Z',
+            description: 'Competencia de habilidades en nudos',
+            type: 'REGULAR',
+            maxScore: 100,
           },
-          eventItems: [
+          club: {
+            id: 5,
+            name: 'Club Aventureros del Norte',
+            city: 'Bogotá',
+            shieldUrl: 'https://example.com/shield.png',
+          },
+          items: [
             {
-              id: 1,
-              name: 'Nudo de Ocho',
-              description: 'Realizar correctamente un nudo de ocho',
-              maxScore: 10,
-              order: 1
+              id: 101,
+              score: 8.5,
+              eventItem: {
+                id: 201,
+                name: 'Nudo de Ocho',
+              },
             },
             {
-              id: 2,
-              name: 'Nudo Ballestrinque',
-              description: 'Realizar correctamente un nudo ballestrinque',
-              maxScore: 10,
-              order: 2
-            }
-          ]
-        }
-      }
-    }
+              id: 102,
+              score: 12.0,
+              eventItem: {
+                id: 202,
+                name: 'Nudo Ballestrinque',
+              },
+            },
+          ],
+        },
+      ],
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'eventId inválido',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: 'eventId must be a valid number',
+        error: 'Bad Request',
+      },
+    },
   })
   @ApiResponse({
     status: 404,
-    description: 'Instancia de evento no encontrada',
+    description: 'Evento no encontrado',
     schema: {
       example: {
         statusCode: 404,
-        message: 'Instancia de evento con ID 10 no encontrada',
-        error: 'Not Found'
-      }
-    }
+        message: 'CampEvent with ID 13 not found',
+        error: 'Not Found',
+      },
+    },
   })
   @ApiResponse({
     status: 401,
@@ -281,9 +340,109 @@ export class CampEventsController {
       example: {
         statusCode: 401,
         message: 'No autorizado',
-        error: 'Unauthorized'
-      }
+        error: 'Unauthorized',
+      },
+    },
+  })
+  getResultsByEvent(@Query('eventId') eventId: string) {
+    const parsedEventId = parseInt(eventId, 10);
+    if (isNaN(parsedEventId)) {
+      throw new BadRequestException('eventId must be a valid number');
     }
+    return this.campEventsService.getResultsByEvent(parsedEventId);
+  }
+
+  @Get(':id')
+  @ApiOperation({
+    summary: 'Obtener evento de campamento por ID',
+    description:
+      'Obtiene un evento específico de un campamento por su ID, incluyendo todos sus items de evaluación (items regulares y items basados en miembros)',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID del evento',
+    type: Number,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Evento obtenido exitosamente',
+    schema: {
+      example: {
+        id: 1,
+        isActive: true,
+        name: 'Nudos y Amarres - Campamento Nacional 2025',
+        description:
+          'Competencia de habilidades en nudos y técnicas de amarre',
+        maxScore: 100,
+        type: 'REGULAR',
+        createdAt: '2025-01-23T09:00:00.000Z',
+        updatedAt: '2025-01-23T09:00:00.000Z',
+        camp: {
+          id: 1,
+          name: 'Campamento Nacional 2025',
+          startDate: '2025-03-15T00:00:00.000Z',
+          endDate: '2025-03-18T00:00:00.000Z',
+          location: 'Parque Nacional Tayrona',
+        },
+        items: [
+          {
+            id: 1,
+            name: 'Nudo de Ocho',
+            isActive: true,
+          },
+          {
+            id: 2,
+            name: 'Nudo Ballestrinque',
+            isActive: true,
+          },
+          {
+            id: 3,
+            name: 'Amarre Cuadrado',
+            isActive: true,
+          },
+        ],
+        memberBasedItems: [
+          {
+            id: 1,
+            name: 'Cantidad de Menores',
+            applicableCharacteristics: ['MENOR'],
+            calculationType: 'COUNT',
+            isRequired: false,
+            isActive: true,
+          },
+          {
+            id: 2,
+            name: 'Cantidad de Adultos',
+            applicableCharacteristics: ['ADULTO'],
+            calculationType: 'COUNT',
+            isRequired: false,
+            isActive: true,
+          },
+        ],
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Evento no encontrado',
+    schema: {
+      example: {
+        statusCode: 404,
+        message: 'CampEvent with ID 10 not found',
+        error: 'Not Found',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'No autorizado',
+    schema: {
+      example: {
+        statusCode: 401,
+        message: 'No autorizado',
+        error: 'Unauthorized',
+      },
+    },
   })
   findOne(@Param('id') id: string) {
     return this.campEventsService.findOne(+id);
@@ -291,25 +450,25 @@ export class CampEventsController {
 
   @Patch(':id')
   @ApiOperation({
-    summary: 'Actualizar instancia de evento',
-    description: 'Actualiza una instancia de evento existente. Permite modificar personalizaciones como nombre, descripción y puntaje máximo'
+    summary: 'Actualizar evento de campamento',
+    description: 'Actualiza un evento existente de un campamento. Permite modificar nombre, descripción, puntaje máximo y estado activo.'
   })
   @ApiParam({
     name: 'id',
-    description: 'ID de la instancia de evento a actualizar',
+    description: 'ID del evento a actualizar',
     type: Number
   })
   @ApiResponse({
     status: 200,
-    description: 'Instancia de evento actualizada exitosamente',
+    description: 'Evento actualizado exitosamente',
     schema: {
       example: {
         id: 1,
-        campId: 1,
-        eventId: 1,
-        customName: 'Nudos y Amarres - Edición Especial',
-        customDescription: 'Competencia especial de nudos actualizada para el Campamento Nacional 2025',
-        customMaxScore: 120,
+        isActive: true,
+        name: 'Nudos y Amarres - Edición Especial',
+        description: 'Competencia especial de nudos actualizada para el Campamento Nacional 2025',
+        maxScore: 120,
+        type: 'REGULAR',
         createdAt: '2025-01-23T09:00:00.000Z',
         updatedAt: '2025-01-24T11:20:00.000Z',
         camp: {
@@ -319,27 +478,24 @@ export class CampEventsController {
           endDate: '2025-03-18T00:00:00.000Z',
           location: 'Parque Nacional Tayrona'
         },
-        event: {
-          id: 1,
-          name: 'Nudos y Amarres',
-          description: 'Competencia de habilidades en nudos y técnicas de amarre',
-          categoryId: 1,
-          category: {
+        items: [
+          {
             id: 1,
-            name: 'Guías Mayores',
-            code: 'GM'
+            name: 'Nudo de Ocho',
+            isActive: true,
           }
-        }
+        ],
+        memberBasedItems: []
       }
     }
   })
   @ApiResponse({
     status: 404,
-    description: 'Instancia de evento no encontrada',
+    description: 'Evento no encontrado',
     schema: {
       example: {
         statusCode: 404,
-        message: 'Instancia de evento con ID 10 no encontrada',
+        message: 'CampEvent with ID 10 not found',
         error: 'Not Found'
       }
     }
@@ -350,7 +506,7 @@ export class CampEventsController {
     schema: {
       example: {
         statusCode: 400,
-        message: ['customMaxScore debe ser un número positivo'],
+        message: ['maxScore must be a number'],
         error: 'Bad Request'
       }
     }
@@ -375,30 +531,30 @@ export class CampEventsController {
 
   @Delete(':id')
   @ApiOperation({
-    summary: 'Eliminar instancia de evento',
-    description: 'Elimina una instancia de evento de un campamento'
+    summary: 'Eliminar evento de campamento',
+    description: 'Elimina un evento de un campamento. Los items asociados se eliminan en cascada.'
   })
   @ApiParam({
     name: 'id',
-    description: 'ID de la instancia de evento a eliminar',
+    description: 'ID del evento a eliminar',
     type: Number
   })
   @ApiResponse({
     status: 200,
-    description: 'Instancia de evento eliminada exitosamente',
+    description: 'Evento eliminado exitosamente',
     schema: {
       example: {
-        message: 'Instancia de evento eliminada exitosamente'
+        message: 'Evento eliminado exitosamente'
       }
     }
   })
   @ApiResponse({
     status: 404,
-    description: 'Instancia de evento no encontrada',
+    description: 'Evento no encontrado',
     schema: {
       example: {
         statusCode: 404,
-        message: 'Instancia de evento con ID 10 no encontrada',
+        message: 'CampEvent with ID 10 not found',
         error: 'Not Found'
       }
     }

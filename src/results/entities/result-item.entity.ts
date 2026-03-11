@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { Result } from './result.entity';
-import { EventItem } from '../../events/entities/event-item.entity';
+import { CampEventItem } from '../../camp-events/entities/camp-event-item.entity';
 
 @Entity()
 export class ResultItem {
@@ -13,6 +13,6 @@ export class ResultItem {
   @ManyToOne(() => Result, (result) => result.items)
   result: Result;
 
-  @ManyToOne(() => EventItem)
-  eventItem: EventItem;
+  @ManyToOne(() => CampEventItem)
+  eventItem: CampEventItem;
 }

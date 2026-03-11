@@ -20,7 +20,7 @@ export class CampEvent {
   @ManyToOne(() => Camp, (camp) => camp.campEvents)
   camp: Camp;
 
-  @ManyToOne(() => Event)
+  @ManyToOne(() => Event, { nullable: true })
   eventTemplate: Event;
 
   // Campos personalizables por campamento

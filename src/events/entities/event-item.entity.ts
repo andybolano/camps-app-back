@@ -9,6 +9,6 @@ export class EventItem {
   @Column()
   name: string;
 
-  @ManyToOne(() => Event, (event) => event.items)
+  @ManyToOne(() => Event, (event) => event.items, { onDelete: 'CASCADE' })
   event: Event;
 }
