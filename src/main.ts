@@ -29,29 +29,6 @@ async function bootstrap() {
     });
   }
 
-  // Only serve static assets in production mode
-  if (!isDev) {
-    app.useStaticAssets(
-      join(__dirname, '..', '..', 'frontend/dist/frontend/browser'),
-    );
-
-    // Wildcard middleware para rutas no-API (solo en producción)
-    app.use('*', (req, res, next) => {
-      if (req.originalUrl.startsWith('/api')) {
-        next();
-      } else {
-        res.sendFile(
-          join(
-            __dirname,
-            '..',
-            '..',
-            'frontend/dist/frontend/browser/index.html',
-          ),
-        );
-      }
-    });
-  }
-
   const port = process.env.PORT || 3000;
   await app.listen(port);
   console.log(`Application running on: ${await app.getUrl()}`);
